@@ -99,7 +99,7 @@ namespace ReverseRabbitRunner.Editor
                 field.name = side < 0 ? "CarrotField_Left" : "CarrotField_Right";
                 field.transform.parent = groundParent.transform;
                 field.transform.localScale = new Vector3(24f, 0.15f, SegmentLength * 50 + 50f);
-                float xPos = side * (GroundWidth / 2f + 2f);
+                float xPos = side * (GroundWidth / 2f + 12f);
                 field.transform.position = new Vector3(xPos, -0.025f, -SegmentLength * 25 + 25f);
 
                 var fieldRenderer = field.GetComponent<Renderer>();
@@ -275,7 +275,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 arm.name = $"{side}Arm";
                 arm.transform.parent = playerParent.transform;
-                arm.transform.localPosition = new Vector3(mirrorSide * 0.55f, 0.2f, 0f);
+                arm.transform.localPosition = new Vector3(mirrorSide * 0.55f, 0.5f, 0f);
                 arm.transform.localScale = new Vector3(0.08f, 1.0f, 0.08f);
                 arm.transform.localRotation = Quaternion.Euler(0, 0, mirrorSide * -70f);
                 Object.DestroyImmediate(arm.GetComponent<Collider>());
@@ -287,7 +287,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject paw = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 paw.name = $"{side}Paw";
                 paw.transform.parent = playerParent.transform;
-                paw.transform.localPosition = new Vector3(mirrorSide * 2.0f, 0.35f, 0f);
+                paw.transform.localPosition = new Vector3(mirrorSide * 2.0f, 0.8f, 0f);
                 paw.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
                 Object.DestroyImmediate(paw.GetComponent<Collider>());
                 Material pawMat = new Material(urpLit);
@@ -298,7 +298,7 @@ namespace ReverseRabbitRunner.Editor
                 // Assembly positioned beyond the paw so glass doesn't clip
                 GameObject mirrorAssembly = new GameObject($"{side}MirrorAssembly");
                 mirrorAssembly.transform.parent = playerParent.transform;
-                mirrorAssembly.transform.localPosition = new Vector3(mirrorSide * 2.5f, 0.45f, 0f);
+                mirrorAssembly.transform.localPosition = new Vector3(mirrorSide * 2.5f, 0.9f, 0f);
                 mirrorAssembly.transform.localRotation = Quaternion.Euler(5f, mirrorSide * 15f, 0);
 
                 // Mirror glass (Quad) — rotated 180° Y so visible face points local -Z (toward camera)
@@ -600,6 +600,7 @@ namespace ReverseRabbitRunner.Editor
 
                 // Make it a trigger
                 carrot.GetComponent<Collider>().isTrigger = true;
+                carrot.AddComponent<World.CarrotBob>();
             }
         }
 
