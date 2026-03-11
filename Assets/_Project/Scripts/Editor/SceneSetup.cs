@@ -485,47 +485,93 @@ namespace ReverseRabbitRunner.Editor
             Object.DestroyImmediate(hatTop.GetComponent<Collider>());
             hatTop.GetComponent<Renderer>().material = hatMat;
 
-            // Farmer arms and hands
+            // Farmer arms — properly rigged with joints (shoulder → upper arm → elbow → forearm → hand)
             Material armMat = new Material(urpLit);
-            armMat.color = new Color(0.3f, 0.15f, 0.05f); // overalls sleeves
+            armMat.color = new Color(0.3f, 0.15f, 0.05f);
             Material handMat = new Material(urpLit);
-            handMat.color = new Color(0.9f, 0.72f, 0.55f); // skin
+            handMat.color = new Color(0.9f, 0.72f, 0.55f);
 
-            for (int side = -1; side <= 1; side += 2)
-            {
-                string armSide = side < 0 ? "Left" : "Right";
+            // --- LEFT ARM (static pose, hanging by side) ---
+            GameObject leftShoulder = new GameObject("LeftShoulder");
+            leftShoulder.transform.parent = farmerParent.transform;
+            leftShoulder.transform.localPosition = new Vector3(-0.45f, 1.6f, 0f);
+            leftShoulder.transform.localRotation = Quaternion.Euler(0, 0, 15f);
 
-                // Upper arm
-                GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                arm.name = $"{armSide}Arm";
-                arm.transform.parent = farmerParent.transform;
-                arm.transform.localPosition = new Vector3(side * 0.5f, 1.3f, 0f);
-                arm.transform.localScale = new Vector3(0.12f, 0.35f, 0.12f);
-                arm.transform.localRotation = Quaternion.Euler(0, 0, side * -25f);
-                Object.DestroyImmediate(arm.GetComponent<Collider>());
-                arm.GetComponent<Renderer>().material = armMat;
+            GameObject leftUpperArm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            leftUpperArm.name = "LeftUpperArm";
+            leftUpperArm.transform.parent = leftShoulder.transform;
+            leftUpperArm.transform.localPosition = new Vector3(0, -0.2f, 0);
+            leftUpperArm.transform.localScale = new Vector3(0.12f, 0.22f, 0.12f);
+            Object.DestroyImmediate(leftUpperArm.GetComponent<Collider>());
+            leftUpperArm.GetComponent<Renderer>().material = armMat;
 
-                // Hand (sphere at end of arm)
-                GameObject hand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                hand.name = $"{armSide}Hand";
-                hand.transform.parent = farmerParent.transform;
-                hand.transform.localPosition = new Vector3(side * 0.7f, 0.95f, 0f);
-                hand.transform.localScale = new Vector3(0.15f, 0.15f, 0.15f);
-                Object.DestroyImmediate(hand.GetComponent<Collider>());
-                hand.GetComponent<Renderer>().material = handMat;
-            }
+            GameObject leftElbow = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            leftElbow.name = "LeftElbow";
+            leftElbow.transform.parent = leftShoulder.transform;
+            leftElbow.transform.localPosition = new Vector3(0, -0.42f, 0);
+            leftElbow.transform.localScale = new Vector3(0.13f, 0.13f, 0.13f);
+            Object.DestroyImmediate(leftElbow.GetComponent<Collider>());
+            leftElbow.GetComponent<Renderer>().material = handMat;
 
-            // Pitchfork — held by right hand, as a separate animatable object
+            GameObject leftForearm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            leftForearm.name = "LeftForearm";
+            leftForearm.transform.parent = leftShoulder.transform;
+            leftForearm.transform.localPosition = new Vector3(0, -0.62f, 0);
+            leftForearm.transform.localScale = new Vector3(0.1f, 0.2f, 0.1f);
+            Object.DestroyImmediate(leftForearm.GetComponent<Collider>());
+            leftForearm.GetComponent<Renderer>().material = armMat;
+
+            GameObject leftHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            leftHand.name = "LeftHand";
+            leftHand.transform.parent = leftShoulder.transform;
+            leftHand.transform.localPosition = new Vector3(0, -0.82f, 0);
+            leftHand.transform.localScale = new Vector3(0.14f, 0.14f, 0.14f);
+            Object.DestroyImmediate(leftHand.GetComponent<Collider>());
+            leftHand.GetComponent<Renderer>().material = handMat;
+
+            // --- RIGHT ARM + FORK (all under ForkPivot so they animate together) ---
             GameObject forkPivot = new GameObject("ForkPivot");
             forkPivot.transform.parent = farmerParent.transform;
-            forkPivot.transform.localPosition = new Vector3(0.7f, 0.95f, 0f);
+            forkPivot.transform.localPosition = new Vector3(0.45f, 1.6f, 0f);
             forkPivot.transform.localRotation = Quaternion.Euler(0, 0, -15f);
 
-            // Handle
+            GameObject rightUpperArm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            rightUpperArm.name = "RightUpperArm";
+            rightUpperArm.transform.parent = forkPivot.transform;
+            rightUpperArm.transform.localPosition = new Vector3(0, -0.2f, 0);
+            rightUpperArm.transform.localScale = new Vector3(0.12f, 0.22f, 0.12f);
+            Object.DestroyImmediate(rightUpperArm.GetComponent<Collider>());
+            rightUpperArm.GetComponent<Renderer>().material = armMat;
+
+            GameObject rightElbow = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            rightElbow.name = "RightElbow";
+            rightElbow.transform.parent = forkPivot.transform;
+            rightElbow.transform.localPosition = new Vector3(0, -0.42f, 0);
+            rightElbow.transform.localScale = new Vector3(0.13f, 0.13f, 0.13f);
+            Object.DestroyImmediate(rightElbow.GetComponent<Collider>());
+            rightElbow.GetComponent<Renderer>().material = handMat;
+
+            GameObject rightForearm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            rightForearm.name = "RightForearm";
+            rightForearm.transform.parent = forkPivot.transform;
+            rightForearm.transform.localPosition = new Vector3(0, -0.62f, 0);
+            rightForearm.transform.localScale = new Vector3(0.1f, 0.2f, 0.1f);
+            Object.DestroyImmediate(rightForearm.GetComponent<Collider>());
+            rightForearm.GetComponent<Renderer>().material = armMat;
+
+            GameObject rightHand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            rightHand.name = "RightHand";
+            rightHand.transform.parent = forkPivot.transform;
+            rightHand.transform.localPosition = new Vector3(0, -0.82f, 0);
+            rightHand.transform.localScale = new Vector3(0.14f, 0.14f, 0.14f);
+            Object.DestroyImmediate(rightHand.GetComponent<Collider>());
+            rightHand.GetComponent<Renderer>().material = handMat;
+
+            // Pitchfork handle — extends upward from right hand (prongs UP)
             GameObject fork = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             fork.name = "PitchforkHandle";
             fork.transform.parent = forkPivot.transform;
-            fork.transform.localPosition = new Vector3(0, 0.7f, 0.1f);
+            fork.transform.localPosition = new Vector3(0, 0.3f, 0.1f);
             fork.transform.localScale = new Vector3(0.04f, 0.9f, 0.04f);
             Object.DestroyImmediate(fork.GetComponent<Collider>());
 
@@ -533,18 +579,17 @@ namespace ReverseRabbitRunner.Editor
             forkMat.color = new Color(0.5f, 0.35f, 0.15f);
             fork.GetComponent<Renderer>().material = forkMat;
 
-            // Pitchfork prongs
+            // Pitchfork prongs — at the TOP of the handle (pointing up)
+            Material prongMat = new Material(urpLit);
+            prongMat.color = new Color(0.6f, 0.6f, 0.6f);
             for (int i = -1; i <= 1; i++)
             {
                 GameObject prong = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 prong.name = $"Prong_{i+1}";
                 prong.transform.parent = fork.transform;
-                prong.transform.localPosition = new Vector3(i * 1.5f, -1.1f, 0);
+                prong.transform.localPosition = new Vector3(i * 1.5f, 1.1f, 0);
                 prong.transform.localScale = new Vector3(0.4f, 0.25f, 0.4f);
                 Object.DestroyImmediate(prong.GetComponent<Collider>());
-
-                Material prongMat = new Material(urpLit);
-                prongMat.color = new Color(0.6f, 0.6f, 0.6f);
                 prong.GetComponent<Renderer>().material = prongMat;
             }
 
