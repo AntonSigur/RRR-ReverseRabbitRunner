@@ -1,0 +1,26 @@
+Game is called Reverse Rabbit Runner
+
+It is an endless runner game (think subway surfs, minions).
+
+Scene is mostly carrot farm.
+
+The rabbit always runs backwards, but has mirrors on its ears (like side mirrors on car). This is how the game user sees where the rabbit is going.
+
+Rabbit will collect carrots and avoid obsticles on the carrot farm by moving to the sides (left and right). The obstacles RIGHT on the back of the rabbit is less seen, as the side mirrors show limited view.
+
+In front of the rabbit, there is a angry farmer, because the rabbit is stealing carrots. If rabbit runs into obsticles the farmer might catch the rabbit and kill it violently.
+
+The goal of the rabbit is to capture as many carrots as it can and gain high score.
+
+There are special "carrots"
+
+1. Birth-Carrot.
+The rabbit instantly gives birth to baby rabbits, that will run with the rabbit - all lanes of the path - and capture all carrits, but slowly we will loose the baby rabbits as they will run into obstacles or be captured by the angry farmer.
+
+2. Wing-Carrot
+You capture the wing carrot, you will turn the right way and now glide/fly and instantly be able to capture carrots that are lined up in the air
+
+3. Dirty-Carrot
+It will block your vision in the mirrors even more for some time
+
+OThers to come...
