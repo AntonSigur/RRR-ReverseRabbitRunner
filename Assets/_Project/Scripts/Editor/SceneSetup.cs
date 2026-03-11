@@ -240,9 +240,9 @@ namespace ReverseRabbitRunner.Editor
                 farmerModel.name = "FarmerModel";
                 farmerModel.transform.parent = farmerParent.transform;
                 farmerModel.transform.localPosition = Vector3.zero;
-                farmerModel.transform.localScale = Vector3.one * 3f;
-                // Face towards -Z (towards the rabbit)
-                farmerModel.transform.localRotation = Quaternion.Euler(0, 180f, 0);
+                farmerModel.transform.localScale = Vector3.one * 2.3f;
+                // Face towards the rabbit (which is at -Z from the farmer)
+                farmerModel.transform.localRotation = Quaternion.identity;
 
                 // Fix pink materials — upgrade to URP Lit shader
                 UpgradeMaterialsToURP(farmerModel);
