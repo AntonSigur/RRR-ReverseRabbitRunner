@@ -492,9 +492,6 @@ namespace ReverseRabbitRunner.Editor
             Material skinHandMat = new Material(urpLit);
             skinHandMat.color = new Color(0.9f, 0.72f, 0.55f);
 
-            float upperArmLen = 0.4f; // actual world length
-            float forearmLen = 0.35f;
-
             // Helper: Unity cylinder is 2 units tall, scale.y = len/2
             // To pivot from top end: offset child by -len/2
 
@@ -637,9 +634,6 @@ namespace ReverseRabbitRunner.Editor
                     prong.transform.parent = forkPivot.transform;
                     prong.transform.localPosition = new Vector3(handleX + i * 0.05f, handleTopY + 0.13f, handleZ);
                     prong.transform.localScale = new Vector3(0.02f, 0.12f, 0.02f);
-                    Object.DestroyImmediate(prong.GetComponent<Collider>());
-                    prong.GetComponent<Renderer>().material = prongMat;
-                }
                     Object.DestroyImmediate(prong.GetComponent<Collider>());
                     prong.GetComponent<Renderer>().material = prongMat;
                 }
