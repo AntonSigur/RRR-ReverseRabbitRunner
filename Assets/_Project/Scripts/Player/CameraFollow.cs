@@ -3,16 +3,15 @@ using UnityEngine;
 namespace ReverseRabbitRunner.Player
 {
     /// <summary>
-    /// Smooth camera follow that tracks the rabbit from behind.
-    /// Since the rabbit runs backwards (-Z), the camera follows at +Z offset.
+    /// Smooth camera follow positioned to see the rabbit's FACE and the angry farmer beyond.
+    /// The rabbit runs in -Z but faces +Z, so the camera sits at -Z offset looking towards +Z.
     /// </summary>
     public class CameraFollow : MonoBehaviour
     {
         [Header("Follow Settings")]
         [SerializeField] private Transform target;
-        [SerializeField] private Vector3 offset = new Vector3(0, 3f, 8f);
+        [SerializeField] private Vector3 offset = new Vector3(0, 3.5f, -10f);
         [SerializeField] private float smoothSpeed = 8f;
-        [SerializeField] private float lookAheadDistance = 5f;
 
         [Header("Dynamic")]
         [SerializeField] private float speedZoomFactor = 0.02f;
@@ -37,17 +36,15 @@ namespace ReverseRabbitRunner.Player
         {
             if (target == null) return;
 
-            // Camera position: behind and above the rabbit
-            // The rabbit runs in -Z, so camera is at +Z offset (behind the running direction)
+            // Position camera at -Z offset (behind the rabbit's face direction)
             Vector3 desiredPosition = target.position + offset;
             transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
 
-            // Look at a point slightly behind the rabbit (ahead in running direction)
-            Vector3 lookTarget = target.position + Vector3.forward * lookAheadDistance;
-            lookTarget.y = target.position.y + 0.5f;
+            // Look at the rabbit (and farmer beyond it in +Z direction)
+            Vector3 lookTarget = target.position + new Vector3(0, 0.5f, 5f);
             transform.LookAt(lookTarget);
 
-            // Speed-based FOV increase for sense of velocity
+            // Speed-based FOV increase
             if (cam != null)
             {
                 var rabbit = target.GetComponent<RabbitController>();

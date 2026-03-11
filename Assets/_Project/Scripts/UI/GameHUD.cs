@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ReverseRabbitRunner.UI
 {
@@ -142,7 +143,7 @@ namespace ReverseRabbitRunner.UI
                 infoStyle.alignment = TextAnchor.UpperLeft;
                 infoStyle.fontSize = 18;
 
-                if (Input.GetKeyDown(KeyCode.R))
+                if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
                 {
                     Core.GameManager.Instance?.RestartGame();
                     UnityEngine.SceneManagement.SceneManager.LoadScene(

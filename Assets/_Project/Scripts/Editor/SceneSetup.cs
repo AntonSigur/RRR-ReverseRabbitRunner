@@ -206,7 +206,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject mainCamObj = new GameObject("MainCamera");
             mainCamObj.tag = "MainCamera";
             mainCamObj.transform.parent = cameraParent.transform;
-            mainCamObj.transform.position = new Vector3(0, 3f, 8f);
+            mainCamObj.transform.position = new Vector3(0, 3.5f, -10f);
             mainCamObj.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
             Camera mainCam = mainCamObj.AddComponent<Camera>();
             mainCam.fieldOfView = 60f;

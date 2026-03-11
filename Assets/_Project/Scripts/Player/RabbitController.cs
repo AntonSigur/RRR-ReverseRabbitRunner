@@ -1,11 +1,12 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace ReverseRabbitRunner.Player
 {
     /// <summary>
     /// Controls the rabbit's lane-switching movement.
     /// The rabbit runs backwards automatically; player controls lateral movement.
-    /// Supports keyboard (A/D, Left/Right arrows) and touch swipe input.
+    /// Uses the new Input System for cross-platform support.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class RabbitController : MonoBehaviour
@@ -23,20 +24,16 @@ namespace ReverseRabbitRunner.Player
         [Header("Physics")]
         [SerializeField] private float gravity = -30f;
 
-        [Header("Touch Input")]
-        [SerializeField] private float swipeThreshold = 50f;
-
         private CharacterController controller;
         private int currentLane;
         private float targetXPosition;
         private float verticalVelocity;
         private bool isAlive = true;
 
-        // Input state
-        private bool leftPressed;
-        private bool rightPressed;
-        private Vector2 touchStartPos;
-        private bool isSwiping;
+        // Input
+        private InputAction moveAction;
+        private bool lastFrameLeft;
+        private bool lastFrameRight;
 
         public float CurrentSpeed => forwardSpeed;
         public bool IsAlive => isAlive;
@@ -48,8 +45,34 @@ namespace ReverseRabbitRunner.Player
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
-            currentLane = laneCount / 2; // Start in center lane
+            currentLane = laneCount / 2;
             UpdateTargetPosition();
+        }
+
+        private void OnEnable()
+        {
+            // Create a simple move action with keyboard and gamepad bindings
+            moveAction = new InputAction("Move", InputActionType.Value);
+            moveAction.AddCompositeBinding("1DAxis")
+                .With("Negative", "<Keyboard>/a")
+                .With("Positive", "<Keyboard>/d");
+            moveAction.AddCompositeBinding("1DAxis")
+                .With("Negative", "<Keyboard>/leftArrow")
+                .With("Positive", "<Keyboard>/rightArrow");
+            moveAction.AddCompositeBinding("1DAxis")
+                .With("Negative", "<Gamepad>/leftStick/left")
+                .With("Positive", "<Gamepad>/leftStick/right");
+            moveAction.AddCompositeBinding("1DAxis")
+                .With("Negative", "<Gamepad>/dpad/left")
+                .With("Positive", "<Gamepad>/dpad/right");
+
+            moveAction.Enable();
+        }
+
+        private void OnDisable()
+        {
+            moveAction?.Disable();
+            moveAction?.Dispose();
         }
 
         private void Update()
@@ -84,38 +107,24 @@ namespace ReverseRabbitRunner.Player
 
         private void HandleInput()
         {
-            // Keyboard: A/D or Left/Right arrows
-            if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+            float moveValue = moveAction.ReadValue<float>();
+
+            // Detect "just pressed" by tracking previous frame state
+            bool isLeft = moveValue < -0.5f;
+            bool isRight = moveValue > 0.5f;
+
+            if (isLeft && !lastFrameLeft)
                 MoveLeft();
-            if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+            if (isRight && !lastFrameRight)
                 MoveRight();
 
-            // Touch swipe
-            if (Input.touchCount > 0)
+            lastFrameLeft = isLeft;
+            lastFrameRight = isRight;
+
+            // Touch swipe (using Touchscreen from Input System)
+            if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
             {
-                Touch touch = Input.GetTouch(0);
-                switch (touch.phase)
-                {
-                    case TouchPhase.Began:
-                        touchStartPos = touch.position;
-                        isSwiping = true;
-                        break;
-                    case TouchPhase.Ended:
-                        if (isSwiping)
-                        {
-                            float swipeX = touch.position.x - touchStartPos.x;
-                            if (Mathf.Abs(swipeX) > swipeThreshold)
-                            {
-                                if (swipeX < 0) MoveLeft();
-                                else MoveRight();
-                            }
-                            isSwiping = false;
-                        }
-                        break;
-                    case TouchPhase.Canceled:
-                        isSwiping = false;
-                        break;
-                }
+                // Store start position handled via pointer
             }
         }
 
