@@ -271,8 +271,8 @@ namespace ReverseRabbitRunner.Editor
                 GameObject mirrorArm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 mirrorArm.name = mirrorSide < 0 ? "LeftMirrorArm" : "RightMirrorArm";
                 mirrorArm.transform.parent = playerParent.transform;
-                mirrorArm.transform.localPosition = new Vector3(mirrorSide * 0.45f, 0.6f, 0.15f);
-                mirrorArm.transform.localScale = new Vector3(0.03f, 0.25f, 0.03f);
+                mirrorArm.transform.localPosition = new Vector3(mirrorSide * 0.5f, 0.7f, 0.15f);
+                mirrorArm.transform.localScale = new Vector3(0.04f, 0.45f, 0.04f);
                 mirrorArm.transform.localRotation = Quaternion.Euler(0, 0, 90f);
                 Object.DestroyImmediate(mirrorArm.GetComponent<Collider>());
 
@@ -283,37 +283,39 @@ namespace ReverseRabbitRunner.Editor
                 // Mirror mount (positioned at the end of the arm)
                 GameObject mirrorMount = new GameObject(mirrorSide < 0 ? "LeftMirrorMount" : "RightMirrorMount");
                 mirrorMount.transform.parent = playerParent.transform;
-                mirrorMount.transform.localPosition = new Vector3(mirrorSide * 0.7f, 0.6f, 0.15f);
+                mirrorMount.transform.localPosition = new Vector3(mirrorSide * 1.0f, 0.7f, 0.15f);
                 mirrorMount.transform.localRotation = Quaternion.Euler(10f, mirrorSide * -35f, 0);
 
-                // Mirror frame (dark backing)
+                // Mirror frame (dark backing) — 3x larger
                 GameObject mirrorFrame = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 mirrorFrame.name = "MirrorFrame";
                 mirrorFrame.transform.parent = mirrorMount.transform;
                 mirrorFrame.transform.localPosition = Vector3.zero;
-                mirrorFrame.transform.localScale = new Vector3(0.35f, 0.25f, 0.04f);
+                mirrorFrame.transform.localScale = new Vector3(1.05f, 0.75f, 0.04f);
                 Object.DestroyImmediate(mirrorFrame.GetComponent<Collider>());
 
                 Material frameMat = new Material(urpLit);
                 frameMat.color = new Color(0.2f, 0.2f, 0.2f);
                 mirrorFrame.GetComponent<Renderer>().material = frameMat;
 
-                // Mirror surface (Quad with RenderTexture)
+                // Mirror surface (Quad with RenderTexture) — 3x larger
+                // Quad default normal faces local +Z; we rotate 180° on Y so it faces -Z (toward the camera behind the rabbit)
                 GameObject mirrorSurface = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 mirrorSurface.name = mirrorSide < 0 ? "LeftMirror" : "RightMirror";
                 mirrorSurface.transform.parent = mirrorMount.transform;
                 mirrorSurface.transform.localPosition = new Vector3(0, 0, -0.025f);
-                mirrorSurface.transform.localScale = new Vector3(0.3f, 0.2f, 1f);
+                mirrorSurface.transform.localRotation = Quaternion.Euler(0, 180f, 0);
+                mirrorSurface.transform.localScale = new Vector3(0.9f, 0.6f, 1f);
                 Object.DestroyImmediate(mirrorSurface.GetComponent<Collider>());
 
                 // RenderTexture for mirror camera feed
-                RenderTexture mirrorRT = new RenderTexture(256, 192, 16);
+                RenderTexture mirrorRT = new RenderTexture(512, 384, 16);
                 mirrorRT.name = mirrorSide < 0 ? "LeftMirror_RT" : "RightMirror_RT";
 
-                Material mirrorMat = new Material(urpLit);
+                // Use UNLIT shader so the RenderTexture displays at full brightness
+                Shader urpUnlit = Shader.Find("Universal Render Pipeline/Unlit");
+                Material mirrorMat = new Material(urpUnlit != null ? urpUnlit : urpLit);
                 mirrorMat.SetTexture("_BaseMap", mirrorRT);
-                mirrorMat.SetFloat("_Smoothness", 0.95f);
-                mirrorMat.SetFloat("_Metallic", 0.0f);
                 mirrorMat.name = $"{mirrorSurface.name}_Mat";
                 mirrorSurface.GetComponent<Renderer>().material = mirrorMat;
 
