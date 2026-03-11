@@ -240,9 +240,12 @@ namespace ReverseRabbitRunner.Editor
                 farmerModel.name = "FarmerModel";
                 farmerModel.transform.parent = farmerParent.transform;
                 farmerModel.transform.localPosition = Vector3.zero;
-                farmerModel.transform.localScale = Vector3.one;
+                farmerModel.transform.localScale = Vector3.one * 3f;
                 // Face towards -Z (towards the rabbit)
                 farmerModel.transform.localRotation = Quaternion.Euler(0, 180f, 0);
+
+                // Fix pink materials — upgrade to URP Lit shader
+                UpgradeMaterialsToURP(farmerModel);
             }
             else
             {
@@ -358,6 +361,76 @@ namespace ReverseRabbitRunner.Editor
             RenderSettings.fogColor = new Color(0.75f, 0.85f, 0.95f);
             RenderSettings.fogStartDistance = 40f;
             RenderSettings.fogEndDistance = 120f;
+        }
+
+        /// <summary>
+        /// Upgrades all materials on a GameObject to URP Lit shader,
+        /// preserving their albedo textures.
+        /// </summary>
+        private static void UpgradeMaterialsToURP(GameObject obj)
+        {
+            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
+            if (urpLit == null)
+            {
+                Debug.LogWarning("URP Lit shader not found — cannot upgrade materials");
+                return;
+            }
+
+            var renderers = obj.GetComponentsInChildren<Renderer>(true);
+            foreach (var renderer in renderers)
+            {
+                var mats = renderer.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] == null) continue;
+                    if (mats[i].shader == urpLit) continue; // already URP
+
+                    // Create a new URP material preserving textures
+                    Material newMat = new Material(urpLit);
+                    newMat.name = mats[i].name + "_URP";
+
+                    // Copy albedo texture if present
+                    if (mats[i].HasProperty("_MainTex"))
+                    {
+                        Texture mainTex = mats[i].GetTexture("_MainTex");
+                        if (mainTex != null)
+                            newMat.SetTexture("_BaseMap", mainTex);
+                    }
+
+                    // Copy color
+                    if (mats[i].HasProperty("_Color"))
+                        newMat.SetColor("_BaseColor", mats[i].GetColor("_Color"));
+
+                    // Copy normal map if present
+                    if (mats[i].HasProperty("_BumpMap"))
+                    {
+                        Texture normalTex = mats[i].GetTexture("_BumpMap");
+                        if (normalTex != null)
+                        {
+                            newMat.SetTexture("_BumpMap", normalTex);
+                            newMat.EnableKeyword("_NORMALMAP");
+                        }
+                    }
+
+                    // Copy metallic/smoothness
+                    if (mats[i].HasProperty("_MetallicGlossMap"))
+                    {
+                        Texture metalTex = mats[i].GetTexture("_MetallicGlossMap");
+                        if (metalTex != null)
+                            newMat.SetTexture("_MetallicGlossMap", metalTex);
+                    }
+
+                    if (mats[i].HasProperty("_OcclusionMap"))
+                    {
+                        Texture aoTex = mats[i].GetTexture("_OcclusionMap");
+                        if (aoTex != null)
+                            newMat.SetTexture("_OcclusionMap", aoTex);
+                    }
+
+                    mats[i] = newMat;
+                }
+                renderer.sharedMaterials = mats;
+            }
         }
     }
 }
