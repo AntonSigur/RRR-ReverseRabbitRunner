@@ -15,7 +15,7 @@ namespace ReverseRabbitRunner.World
         [SerializeField] private int chunksBehind = 1;
 
         [Header("Origin Shifting")]
-        [SerializeField] private float originShiftThreshold = 1000f;
+        [SerializeField] private float originShiftThreshold = 250f;
 
         [Header("Lane Settings")]
         [SerializeField] private int maxLanes = 5;
@@ -36,6 +36,7 @@ namespace ReverseRabbitRunner.World
         private float nextSpawnZ;
         private float totalShifted;
         private Shader urpLit;
+        private float lastShiftTime;
 
         // Theme definitions
         public enum ChunkTheme { Concrete, SnowMud, Grass }
@@ -61,6 +62,10 @@ namespace ReverseRabbitRunner.World
         private void Start()
         {
             urpLit = Shader.Find("Universal Render Pipeline/Lit");
+
+            // Destroy editor preview ground (chunks replace it)
+            var previewGround = GameObject.Find("[Ground]");
+            if (previewGround != null) Destroy(previewGround);
 
             var playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null) playerTransform = playerObj.transform;
@@ -106,8 +111,8 @@ namespace ReverseRabbitRunner.World
                 DespawnOldestChunk();
             }
 
-            // Origin shifting
-            if (Mathf.Abs(playerZ) > originShiftThreshold)
+            // Origin shifting — only when far from origin, with cooldown
+            if (Mathf.Abs(playerZ) > originShiftThreshold && Time.time - lastShiftTime > 1f)
             {
                 PerformOriginShift();
             }
@@ -226,15 +231,27 @@ namespace ReverseRabbitRunner.World
         private void PerformOriginShift()
         {
             Vector3 offset = new Vector3(0, 0, playerTransform.position.z);
+
+            if (Mathf.Abs(offset.z) < 1f) return; // safety: skip tiny shifts
+
             totalShifted += Mathf.Abs(offset.z);
             OriginShiftCount++;
+            lastShiftTime = Time.time;
+
+            // Disable CharacterController before teleporting (Unity requires this)
+            var cc = playerTransform.GetComponentInChildren<CharacterController>();
+            if (cc != null) cc.enabled = false;
 
             // Shift player
             playerTransform.position -= offset;
 
-            // Shift camera (may be separate from player)
+            // Re-enable CharacterController
+            if (cc != null) cc.enabled = true;
+
+            // Shift camera (if not parented to player)
             var cam = Camera.main;
-            if (cam != null && cam.transform.parent != playerTransform)
+            if (cam != null && cam.transform.parent != playerTransform
+                && !cam.transform.IsChildOf(playerTransform))
                 cam.transform.position -= offset;
 
             // Shift farmer
@@ -259,7 +276,7 @@ namespace ReverseRabbitRunner.World
                 activeChunks[i] = c;
             }
 
-            Debug.Log($"[OriginShift #{OriginShiftCount}] Shifted by {offset.z:F0}m | Total shifted: {totalShifted:F0}m");
+            Debug.Log($"[OriginShift #{OriginShiftCount}] Shifted {offset.z:F0}m | Player now at {playerTransform.position.z:F1} | Total: {totalShifted:F0}m");
         }
 
         private ThemeColors GetThemeColors(ChunkTheme theme)
