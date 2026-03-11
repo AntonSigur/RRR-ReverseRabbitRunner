@@ -174,7 +174,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject eye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 eye.name = side < 0 ? "LeftEye" : "RightEye";
                 eye.transform.parent = head.transform;
-                eye.transform.localPosition = new Vector3(side * 0.25f, 0.1f, 0.8f);
+                eye.transform.localPosition = new Vector3(side * 0.25f, 0.1f, -0.8f);
                 eye.transform.localScale = new Vector3(0.25f, 0.3f, 0.15f);
                 Object.DestroyImmediate(eye.GetComponent<Collider>());
 
@@ -187,7 +187,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject pupil = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 pupil.name = "Pupil";
                 pupil.transform.parent = eye.transform;
-                pupil.transform.localPosition = new Vector3(0, 0, 0.35f);
+                pupil.transform.localPosition = new Vector3(0, 0, -0.35f);
                 pupil.transform.localScale = new Vector3(0.45f, 0.55f, 0.4f);
                 Object.DestroyImmediate(pupil.GetComponent<Collider>());
 
@@ -201,7 +201,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject nose = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             nose.name = "RabbitNose";
             nose.transform.parent = head.transform;
-            nose.transform.localPosition = new Vector3(0, -0.1f, 0.9f);
+            nose.transform.localPosition = new Vector3(0, -0.1f, -0.9f);
             nose.transform.localScale = new Vector3(0.15f, 0.12f, 0.1f);
             Object.DestroyImmediate(nose.GetComponent<Collider>());
 
@@ -214,7 +214,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject teeth = GameObject.CreatePrimitive(PrimitiveType.Cube);
             teeth.name = "BuckTeeth";
             teeth.transform.parent = head.transform;
-            teeth.transform.localPosition = new Vector3(0, -0.3f, 0.85f);
+            teeth.transform.localPosition = new Vector3(0, -0.3f, -0.85f);
             teeth.transform.localScale = new Vector3(0.15f, 0.15f, 0.05f);
             Object.DestroyImmediate(teeth.GetComponent<Collider>());
 
@@ -232,7 +232,7 @@ namespace ReverseRabbitRunner.Editor
             Object.DestroyImmediate(tail.GetComponent<Collider>());
             tail.GetComponent<Renderer>().material = rabbitMat;
 
-            // LARGE ears with side mirrors
+            // LARGE ears
             for (int side = -1; side <= 1; side += 2)
             {
                 // Ear — tall, slightly tilted outward
@@ -261,52 +261,76 @@ namespace ReverseRabbitRunner.Editor
                 innerMat.color = new Color(1f, 0.6f, 0.7f);
                 earInner.GetComponent<Renderer>().material = innerMat;
 
-                // MIRROR — attached to the outer side of each ear
-                // Like a car side mirror, angled to show what's behind the rabbit
-                GameObject mirrorMount = new GameObject(side < 0 ? "LeftMirrorMount" : "RightMirrorMount");
-                mirrorMount.transform.parent = ear.transform;
-                mirrorMount.transform.localPosition = new Vector3(side * 1.2f, 0.3f, 0);
-                mirrorMount.transform.localRotation = Quaternion.Euler(10f, side * -50f, 0);
+            }
 
-                // Mirror backing (dark frame)
+            // SIDE MIRRORS — mounted on thin arms extending outward from each side
+            // Like car side mirrors, visible from the main camera behind the rabbit
+            for (int mirrorSide = -1; mirrorSide <= 1; mirrorSide += 2)
+            {
+                // Mirror support arm (thin cylinder from body to mirror)
+                GameObject mirrorArm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                mirrorArm.name = mirrorSide < 0 ? "LeftMirrorArm" : "RightMirrorArm";
+                mirrorArm.transform.parent = playerParent.transform;
+                mirrorArm.transform.localPosition = new Vector3(mirrorSide * 0.45f, 0.6f, 0.15f);
+                mirrorArm.transform.localScale = new Vector3(0.03f, 0.25f, 0.03f);
+                mirrorArm.transform.localRotation = Quaternion.Euler(0, 0, 90f);
+                Object.DestroyImmediate(mirrorArm.GetComponent<Collider>());
+
+                Material armMat = new Material(urpLit);
+                armMat.color = new Color(0.3f, 0.3f, 0.3f);
+                mirrorArm.GetComponent<Renderer>().material = armMat;
+
+                // Mirror mount (positioned at the end of the arm)
+                GameObject mirrorMount = new GameObject(mirrorSide < 0 ? "LeftMirrorMount" : "RightMirrorMount");
+                mirrorMount.transform.parent = playerParent.transform;
+                mirrorMount.transform.localPosition = new Vector3(mirrorSide * 0.7f, 0.6f, 0.15f);
+                mirrorMount.transform.localRotation = Quaternion.Euler(10f, mirrorSide * -35f, 0);
+
+                // Mirror frame (dark backing)
                 GameObject mirrorFrame = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 mirrorFrame.name = "MirrorFrame";
                 mirrorFrame.transform.parent = mirrorMount.transform;
                 mirrorFrame.transform.localPosition = Vector3.zero;
-                mirrorFrame.transform.localScale = new Vector3(1.2f, 0.8f, 0.15f);
+                mirrorFrame.transform.localScale = new Vector3(0.35f, 0.25f, 0.04f);
                 Object.DestroyImmediate(mirrorFrame.GetComponent<Collider>());
 
                 Material frameMat = new Material(urpLit);
                 frameMat.color = new Color(0.2f, 0.2f, 0.2f);
                 mirrorFrame.GetComponent<Renderer>().material = frameMat;
 
-                // Mirror surface (reflective quad) — will show RenderTexture later
+                // Mirror surface (Quad with RenderTexture)
                 GameObject mirrorSurface = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                mirrorSurface.name = side < 0 ? "LeftMirror" : "RightMirror";
+                mirrorSurface.name = mirrorSide < 0 ? "LeftMirror" : "RightMirror";
                 mirrorSurface.transform.parent = mirrorMount.transform;
-                mirrorSurface.transform.localPosition = new Vector3(0, 0, -0.09f);
-                mirrorSurface.transform.localScale = new Vector3(1f, 0.65f, 1f);
+                mirrorSurface.transform.localPosition = new Vector3(0, 0, -0.025f);
+                mirrorSurface.transform.localScale = new Vector3(0.3f, 0.2f, 1f);
                 Object.DestroyImmediate(mirrorSurface.GetComponent<Collider>());
 
+                // RenderTexture for mirror camera feed
+                RenderTexture mirrorRT = new RenderTexture(256, 192, 16);
+                mirrorRT.name = mirrorSide < 0 ? "LeftMirror_RT" : "RightMirror_RT";
+
                 Material mirrorMat = new Material(urpLit);
-                mirrorMat.color = new Color(0.7f, 0.85f, 1f);
+                mirrorMat.SetTexture("_BaseMap", mirrorRT);
                 mirrorMat.SetFloat("_Smoothness", 0.95f);
-                mirrorMat.SetFloat("_Metallic", 0.9f);
+                mirrorMat.SetFloat("_Metallic", 0.0f);
                 mirrorMat.name = $"{mirrorSurface.name}_Mat";
                 mirrorSurface.GetComponent<Renderer>().material = mirrorMat;
 
-                // Mirror support arm (thin cylinder connecting ear to mirror)
-                GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                arm.name = "MirrorArm";
-                arm.transform.parent = ear.transform;
-                arm.transform.localPosition = new Vector3(side * 0.6f, 0.3f, 0);
-                arm.transform.localScale = new Vector3(0.15f, 0.08f, 0.15f);
-                arm.transform.localRotation = Quaternion.Euler(0, 0, 90f);
-                Object.DestroyImmediate(arm.GetComponent<Collider>());
+                // Mirror camera — looks in the running direction (world -Z)
+                // Parent is rotated 180° on Y, so local +Z forward becomes world -Z
+                GameObject mirrorCamObj = new GameObject(mirrorSide < 0 ? "LeftMirrorCamera" : "RightMirrorCamera");
+                mirrorCamObj.transform.parent = playerParent.transform;
+                mirrorCamObj.transform.localPosition = new Vector3(mirrorSide * 0.5f, 1.0f, 1.5f);
+                mirrorCamObj.transform.localRotation = Quaternion.Euler(5f, mirrorSide * -10f, 0f);
 
-                Material armMat = new Material(urpLit);
-                armMat.color = new Color(0.3f, 0.3f, 0.3f);
-                arm.GetComponent<Renderer>().material = armMat;
+                Camera mirrorCam = mirrorCamObj.AddComponent<Camera>();
+                mirrorCam.targetTexture = mirrorRT;
+                mirrorCam.fieldOfView = 60f;
+                mirrorCam.nearClipPlane = 0.3f;
+                mirrorCam.farClipPlane = 150f;
+                mirrorCam.depth = -1f;
+                mirrorCamObj.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
             }
 
             // CharacterController — skinWidth keeps rabbit above ground
