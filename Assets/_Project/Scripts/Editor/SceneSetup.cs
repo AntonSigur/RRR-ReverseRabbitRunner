@@ -69,8 +69,8 @@ namespace ReverseRabbitRunner.Editor
             GameObject farmGround = GameObject.CreatePrimitive(PrimitiveType.Cube);
             farmGround.name = "FarmGround";
             farmGround.transform.parent = groundParent.transform;
-            farmGround.transform.localScale = new Vector3(GroundWidth, 0.1f, SegmentLength * 5);
-            farmGround.transform.position = new Vector3(0, -0.05f, -SegmentLength * 2);
+            farmGround.transform.localScale = new Vector3(GroundWidth, 0.1f, SegmentLength * 50);
+            farmGround.transform.position = new Vector3(0, -0.05f, -SegmentLength * 25);
 
             var groundRenderer = farmGround.GetComponent<Renderer>();
             Material groundMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -82,8 +82,8 @@ namespace ReverseRabbitRunner.Editor
             GameObject path = GameObject.CreatePrimitive(PrimitiveType.Cube);
             path.name = "RunningPath";
             path.transform.parent = groundParent.transform;
-            path.transform.localScale = new Vector3(MaxLanes * LaneWidth, 0.12f, SegmentLength * 5);
-            path.transform.position = new Vector3(0, -0.04f, -SegmentLength * 2);
+            path.transform.localScale = new Vector3(MaxLanes * LaneWidth, 0.12f, SegmentLength * 50);
+            path.transform.position = new Vector3(0, -0.04f, -SegmentLength * 25);
 
             var pathRenderer = path.GetComponent<Renderer>();
             Material pathMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -97,9 +97,9 @@ namespace ReverseRabbitRunner.Editor
                 GameObject field = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 field.name = side < 0 ? "CarrotField_Left" : "CarrotField_Right";
                 field.transform.parent = groundParent.transform;
-                field.transform.localScale = new Vector3(8f, 0.15f, SegmentLength * 5);
+                field.transform.localScale = new Vector3(8f, 0.15f, SegmentLength * 50);
                 float xPos = side * (GroundWidth / 2f + 2f);
-                field.transform.position = new Vector3(xPos, -0.025f, -SegmentLength * 2);
+                field.transform.position = new Vector3(xPos, -0.025f, -SegmentLength * 25);
 
                 var fieldRenderer = field.GetComponent<Renderer>();
                 Material fieldMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -275,52 +275,38 @@ namespace ReverseRabbitRunner.Editor
                 arm.name = $"{side}Arm";
                 arm.transform.parent = playerParent.transform;
                 arm.transform.localPosition = new Vector3(mirrorSide * 0.55f, 0.2f, 0f);
-                arm.transform.localScale = new Vector3(0.08f, 0.5f, 0.08f);
+                arm.transform.localScale = new Vector3(0.08f, 0.8f, 0.08f);
                 arm.transform.localRotation = Quaternion.Euler(0, 0, mirrorSide * -70f);
                 Object.DestroyImmediate(arm.GetComponent<Collider>());
                 Material armMat = new Material(urpLit);
-                armMat.color = new Color(0.85f, 0.85f, 0.85f); // white fur
+                armMat.color = new Color(0.85f, 0.85f, 0.85f);
                 arm.GetComponent<Renderer>().material = armMat;
 
                 // Paw/hand (small sphere at end of arm)
                 GameObject paw = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 paw.name = $"{side}Paw";
                 paw.transform.parent = playerParent.transform;
-                paw.transform.localPosition = new Vector3(mirrorSide * 1.1f, 0.35f, 0f);
-                paw.transform.localScale = new Vector3(0.15f, 0.15f, 0.15f);
+                paw.transform.localPosition = new Vector3(mirrorSide * 1.5f, 0.35f, 0f);
+                paw.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
                 Object.DestroyImmediate(paw.GetComponent<Collider>());
                 Material pawMat = new Material(urpLit);
-                pawMat.color = new Color(1f, 0.8f, 0.8f); // pink paw
+                pawMat.color = new Color(1f, 0.8f, 0.8f);
                 paw.GetComponent<Renderer>().material = pawMat;
 
-                // Mirror assembly — direct child of playerParent, NO mount rotation
-                // Positioned at paw location, facing local -Z (toward camera)
+                // Mirror glass only (no frame box) — pushed further from rabbit
+                // Assembly positioned beyond the paw so glass doesn't clip
                 GameObject mirrorAssembly = new GameObject($"{side}MirrorAssembly");
                 mirrorAssembly.transform.parent = playerParent.transform;
-                mirrorAssembly.transform.localPosition = new Vector3(mirrorSide * 1.1f, 0.35f, 0f);
-                // Slight outward tilt so mirrors angle like car side mirrors
+                mirrorAssembly.transform.localPosition = new Vector3(mirrorSide * 2.0f, 0.45f, 0f);
                 mirrorAssembly.transform.localRotation = Quaternion.Euler(5f, mirrorSide * 15f, 0);
 
-                // Mirror frame (dark backing)
-                GameObject frame = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                frame.name = "Frame";
-                frame.transform.parent = mirrorAssembly.transform;
-                frame.transform.localPosition = Vector3.zero;
-                frame.transform.localScale = new Vector3(1.4f, 1.0f, 0.05f);
-                Object.DestroyImmediate(frame.GetComponent<Collider>());
-                Material frameMat = new Material(urpLit);
-                frameMat.color = new Color(0.15f, 0.15f, 0.15f);
-                frame.GetComponent<Renderer>().material = frameMat;
-
-                // Mirror glass (Quad) — offset just in front of frame's -Z face
-                // Frame is 0.05 thick, so -Z face is at local Z = -0.025
-                // Place Quad at Z = -0.027 and rotate 180° Y so its visible face points -Z
+                // Mirror glass (Quad) — rotated 180° Y so visible face points local -Z (toward camera)
                 GameObject glass = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 glass.name = "Glass";
                 glass.transform.parent = mirrorAssembly.transform;
-                glass.transform.localPosition = new Vector3(0, 0, -0.027f);
+                glass.transform.localPosition = Vector3.zero;
                 glass.transform.localRotation = Quaternion.Euler(0, 180f, 0);
-                glass.transform.localScale = new Vector3(1.3f, 0.9f, 1f);
+                glass.transform.localScale = new Vector3(1.8f, 1.2f, 1f);
                 Object.DestroyImmediate(glass.GetComponent<Collider>());
 
                 // RenderTexture for mirror camera feed
@@ -358,6 +344,7 @@ namespace ReverseRabbitRunner.Editor
 
             // RabbitController
             playerParent.AddComponent<Player.RabbitController>();
+            playerParent.AddComponent<Player.MirrorCamera>();
 
             // Face backwards (rabbit runs in -Z but faces +Z)
             playerParent.transform.rotation = Quaternion.Euler(0, 180f, 0);
@@ -576,7 +563,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject carrotParent = new GameObject("[Carrots]");
 
             // Place lots of carrots along the path
-            for (int i = 0; i < 60; i++)
+            for (int i = 0; i < 300; i++)
             {
                 int lane = Random.Range(0, MaxLanes);
                 float xPos = (lane - MaxLanes / 2) * LaneWidth;
@@ -624,7 +611,7 @@ namespace ReverseRabbitRunner.Editor
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = new Color(0.75f, 0.85f, 0.95f);
             RenderSettings.fogStartDistance = 40f;
-            RenderSettings.fogEndDistance = 120f;
+            RenderSettings.fogEndDistance = 300f;
         }
 
     }
