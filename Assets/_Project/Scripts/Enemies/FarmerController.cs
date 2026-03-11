@@ -11,7 +11,7 @@ namespace ReverseRabbitRunner.Enemies
     public class FarmerController : MonoBehaviour
     {
         [Header("Chase Settings")]
-        [SerializeField] private float baseDistance = 10f;
+        [SerializeField] private float baseDistance = 5f;
         [SerializeField] private float catchUpSpeed = 2f;
         [SerializeField] private float fallBackSpeed = 1f;
         [SerializeField] private float catchDistance = 1f;
