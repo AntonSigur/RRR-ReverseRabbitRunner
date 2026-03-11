@@ -230,45 +230,37 @@ namespace ReverseRabbitRunner.Editor
             farmerParent.tag = "Farmer";
             farmerParent.transform.position = new Vector3(0, 0, 15f);
 
-            // Farmer body
-            GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            body.name = "FarmerBody";
-            body.transform.parent = farmerParent.transform;
-            body.transform.localPosition = new Vector3(0, 1f, 0);
-            body.transform.localScale = new Vector3(0.8f, 1f, 0.8f);
+            // Try to load the Adventure Character prefab
+            GameObject farmerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Adventure_Character/Prefabs/Man_01.prefab");
 
-            var bodyRenderer = body.GetComponent<Renderer>();
-            Material farmerMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            farmerMat.color = new Color(0.6f, 0.3f, 0.15f);
-            farmerMat.name = "Farmer_Mat";
-            bodyRenderer.material = farmerMat;
+            if (farmerPrefab != null)
+            {
+                GameObject farmerModel = (GameObject)PrefabUtility.InstantiatePrefab(farmerPrefab);
+                farmerModel.name = "FarmerModel";
+                farmerModel.transform.parent = farmerParent.transform;
+                farmerModel.transform.localPosition = Vector3.zero;
+                farmerModel.transform.localScale = Vector3.one;
+                // Face towards -Z (towards the rabbit)
+                farmerModel.transform.localRotation = Quaternion.Euler(0, 180f, 0);
+            }
+            else
+            {
+                // Fallback: primitive placeholder
+                GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                body.name = "FarmerBody";
+                body.transform.parent = farmerParent.transform;
+                body.transform.localPosition = new Vector3(0, 1f, 0);
+                body.transform.localScale = new Vector3(0.8f, 1f, 0.8f);
 
-            // Straw hat
-            GameObject hat = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            hat.name = "FarmerHat";
-            hat.transform.parent = farmerParent.transform;
-            hat.transform.localPosition = new Vector3(0, 2.2f, 0);
-            hat.transform.localScale = new Vector3(1f, 0.15f, 1f);
-            Object.DestroyImmediate(hat.GetComponent<Collider>());
+                var bodyRenderer = body.GetComponent<Renderer>();
+                Material farmerMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                farmerMat.color = new Color(0.6f, 0.3f, 0.15f);
+                farmerMat.name = "Farmer_Mat";
+                bodyRenderer.material = farmerMat;
 
-            var hatRenderer = hat.GetComponent<Renderer>();
-            Material hatMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            hatMat.color = new Color(0.8f, 0.75f, 0.5f);
-            hatRenderer.material = hatMat;
-
-            // Pitchfork
-            GameObject fork = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            fork.name = "Pitchfork";
-            fork.transform.parent = farmerParent.transform;
-            fork.transform.localPosition = new Vector3(0.5f, 1.2f, 0.3f);
-            fork.transform.localScale = new Vector3(0.05f, 1f, 0.05f);
-            fork.transform.localRotation = Quaternion.Euler(0, 0, -20f);
-            Object.DestroyImmediate(fork.GetComponent<Collider>());
-
-            var forkRenderer = fork.GetComponent<Renderer>();
-            Material forkMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            forkMat.color = new Color(0.4f, 0.3f, 0.2f);
-            forkRenderer.material = forkMat;
+                Debug.LogWarning("Adventure Character prefab not found at Assets/Adventure_Character/Prefabs/Man_01.prefab — using placeholder");
+            }
 
             farmerParent.AddComponent<Enemies.FarmerController>();
 
