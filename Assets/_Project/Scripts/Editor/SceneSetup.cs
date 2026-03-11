@@ -263,76 +263,90 @@ namespace ReverseRabbitRunner.Editor
 
             }
 
-            // SIDE MIRRORS — mounted on thin arms extending outward from each side
-            // Like car side mirrors, visible from the main camera behind the rabbit
+            // SIDE MIRRORS — rabbit holds them out like hand mirrors
+            // Camera is behind rabbit (at playerParent local -Z direction)
+            // Mirror faces must face local -Z (toward camera). Quad faces local +Z by default.
             for (int mirrorSide = -1; mirrorSide <= 1; mirrorSide += 2)
             {
-                // Mirror support arm (thin cylinder from body to mirror)
-                GameObject mirrorArm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                mirrorArm.name = mirrorSide < 0 ? "LeftMirrorArm" : "RightMirrorArm";
-                mirrorArm.transform.parent = playerParent.transform;
-                mirrorArm.transform.localPosition = new Vector3(mirrorSide * 0.5f, 0.7f, 0.15f);
-                mirrorArm.transform.localScale = new Vector3(0.04f, 0.45f, 0.04f);
-                mirrorArm.transform.localRotation = Quaternion.Euler(0, 0, 90f);
-                Object.DestroyImmediate(mirrorArm.GetComponent<Collider>());
+                string side = mirrorSide < 0 ? "Left" : "Right";
 
+                // Rabbit arm (cylinder from body outward)
+                GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                arm.name = $"{side}Arm";
+                arm.transform.parent = playerParent.transform;
+                arm.transform.localPosition = new Vector3(mirrorSide * 0.55f, 0.2f, 0f);
+                arm.transform.localScale = new Vector3(0.08f, 0.5f, 0.08f);
+                arm.transform.localRotation = Quaternion.Euler(0, 0, mirrorSide * -70f);
+                Object.DestroyImmediate(arm.GetComponent<Collider>());
                 Material armMat = new Material(urpLit);
-                armMat.color = new Color(0.3f, 0.3f, 0.3f);
-                mirrorArm.GetComponent<Renderer>().material = armMat;
+                armMat.color = new Color(0.85f, 0.85f, 0.85f); // white fur
+                arm.GetComponent<Renderer>().material = armMat;
 
-                // Mirror mount (positioned at the end of the arm)
-                GameObject mirrorMount = new GameObject(mirrorSide < 0 ? "LeftMirrorMount" : "RightMirrorMount");
-                mirrorMount.transform.parent = playerParent.transform;
-                mirrorMount.transform.localPosition = new Vector3(mirrorSide * 1.0f, 0.7f, 0.15f);
-                mirrorMount.transform.localRotation = Quaternion.Euler(10f, mirrorSide * -35f, 0);
+                // Paw/hand (small sphere at end of arm)
+                GameObject paw = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                paw.name = $"{side}Paw";
+                paw.transform.parent = playerParent.transform;
+                paw.transform.localPosition = new Vector3(mirrorSide * 1.1f, 0.35f, 0f);
+                paw.transform.localScale = new Vector3(0.15f, 0.15f, 0.15f);
+                Object.DestroyImmediate(paw.GetComponent<Collider>());
+                Material pawMat = new Material(urpLit);
+                pawMat.color = new Color(1f, 0.8f, 0.8f); // pink paw
+                paw.GetComponent<Renderer>().material = pawMat;
 
-                // Mirror frame (dark backing) — 3x larger
-                GameObject mirrorFrame = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                mirrorFrame.name = "MirrorFrame";
-                mirrorFrame.transform.parent = mirrorMount.transform;
-                mirrorFrame.transform.localPosition = Vector3.zero;
-                mirrorFrame.transform.localScale = new Vector3(1.05f, 0.75f, 0.04f);
-                Object.DestroyImmediate(mirrorFrame.GetComponent<Collider>());
+                // Mirror assembly — direct child of playerParent, NO mount rotation
+                // Positioned at paw location, facing local -Z (toward camera)
+                GameObject mirrorAssembly = new GameObject($"{side}MirrorAssembly");
+                mirrorAssembly.transform.parent = playerParent.transform;
+                mirrorAssembly.transform.localPosition = new Vector3(mirrorSide * 1.1f, 0.35f, 0f);
+                // Slight outward tilt so mirrors angle like car side mirrors
+                mirrorAssembly.transform.localRotation = Quaternion.Euler(5f, mirrorSide * 15f, 0);
 
+                // Mirror frame (dark backing)
+                GameObject frame = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                frame.name = "Frame";
+                frame.transform.parent = mirrorAssembly.transform;
+                frame.transform.localPosition = Vector3.zero;
+                frame.transform.localScale = new Vector3(1.4f, 1.0f, 0.05f);
+                Object.DestroyImmediate(frame.GetComponent<Collider>());
                 Material frameMat = new Material(urpLit);
-                frameMat.color = new Color(0.2f, 0.2f, 0.2f);
-                mirrorFrame.GetComponent<Renderer>().material = frameMat;
+                frameMat.color = new Color(0.15f, 0.15f, 0.15f);
+                frame.GetComponent<Renderer>().material = frameMat;
 
-                // Mirror surface (Quad with RenderTexture) — 3x larger
-                // Quad default normal faces local +Z; we rotate 180° on Y so it faces -Z (toward the camera behind the rabbit)
-                GameObject mirrorSurface = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                mirrorSurface.name = mirrorSide < 0 ? "LeftMirror" : "RightMirror";
-                mirrorSurface.transform.parent = mirrorMount.transform;
-                mirrorSurface.transform.localPosition = new Vector3(0, 0, -0.025f);
-                mirrorSurface.transform.localRotation = Quaternion.Euler(0, 180f, 0);
-                mirrorSurface.transform.localScale = new Vector3(0.9f, 0.6f, 1f);
-                Object.DestroyImmediate(mirrorSurface.GetComponent<Collider>());
+                // Mirror glass (Quad) — offset just in front of frame's -Z face
+                // Frame is 0.05 thick, so -Z face is at local Z = -0.025
+                // Place Quad at Z = -0.027 and rotate 180° Y so its visible face points -Z
+                GameObject glass = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                glass.name = "Glass";
+                glass.transform.parent = mirrorAssembly.transform;
+                glass.transform.localPosition = new Vector3(0, 0, -0.027f);
+                glass.transform.localRotation = Quaternion.Euler(0, 180f, 0);
+                glass.transform.localScale = new Vector3(1.3f, 0.9f, 1f);
+                Object.DestroyImmediate(glass.GetComponent<Collider>());
 
                 // RenderTexture for mirror camera feed
                 RenderTexture mirrorRT = new RenderTexture(512, 384, 16);
-                mirrorRT.name = mirrorSide < 0 ? "LeftMirror_RT" : "RightMirror_RT";
+                mirrorRT.name = $"{side}Mirror_RT";
 
-                // Use UNLIT shader so the RenderTexture displays at full brightness
                 Shader urpUnlit = Shader.Find("Universal Render Pipeline/Unlit");
-                Material mirrorMat = new Material(urpUnlit != null ? urpUnlit : urpLit);
-                mirrorMat.SetTexture("_BaseMap", mirrorRT);
-                mirrorMat.name = $"{mirrorSurface.name}_Mat";
-                mirrorSurface.GetComponent<Renderer>().material = mirrorMat;
+                Material glassMat = new Material(urpUnlit != null ? urpUnlit : urpLit);
+                glassMat.SetTexture("_BaseMap", mirrorRT);
+                glassMat.name = $"{side}Glass_Mat";
+                glass.GetComponent<Renderer>().material = glassMat;
 
-                // Mirror camera — looks in the running direction (world -Z)
-                // Parent is rotated 180° on Y, so local +Z forward becomes world -Z
-                GameObject mirrorCamObj = new GameObject(mirrorSide < 0 ? "LeftMirrorCamera" : "RightMirrorCamera");
-                mirrorCamObj.transform.parent = playerParent.transform;
-                mirrorCamObj.transform.localPosition = new Vector3(mirrorSide * 0.5f, 1.0f, 1.5f);
-                mirrorCamObj.transform.localRotation = Quaternion.Euler(5f, mirrorSide * -10f, 0f);
+                // Mirror camera — at rabbit's head, looking forward (running direction)
+                // playerParent local +Z = world -Z (running direction)
+                GameObject camObj = new GameObject($"{side}MirrorCamera");
+                camObj.transform.parent = playerParent.transform;
+                camObj.transform.localPosition = new Vector3(mirrorSide * 0.3f, 1.0f, 0.8f);
+                camObj.transform.localRotation = Quaternion.Euler(8f, mirrorSide * 5f, 0f);
 
-                Camera mirrorCam = mirrorCamObj.AddComponent<Camera>();
+                Camera mirrorCam = camObj.AddComponent<Camera>();
                 mirrorCam.targetTexture = mirrorRT;
-                mirrorCam.fieldOfView = 60f;
-                mirrorCam.nearClipPlane = 0.3f;
-                mirrorCam.farClipPlane = 150f;
+                mirrorCam.fieldOfView = 80f;
+                mirrorCam.nearClipPlane = 0.5f;
+                mirrorCam.farClipPlane = 200f;
                 mirrorCam.depth = -1f;
-                mirrorCamObj.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                camObj.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
             }
 
             // CharacterController — skinWidth keeps rabbit above ground
