@@ -121,6 +121,19 @@ namespace ReverseRabbitRunner.UI
                 GUI.Label(new Rect(padding, padding + 95, 300, 30), highText, infoStyle);
             }
 
+            // Chunk/Distance debug stats (bottom-left)
+            var chunkMgr = FindAnyObjectByType<World.ChunkManager>();
+            if (chunkMgr != null)
+            {
+                float y = Screen.height - 110;
+                GUI.Label(new Rect(padding, y, 400, 25),
+                    $"Distance: {chunkMgr.TotalDistance:F0}m", infoStyle);
+                GUI.Label(new Rect(padding, y + 22, 400, 25),
+                    $"Chunk: #{chunkMgr.CurrentChunkIndex}  (active: {chunkMgr.ActiveChunkCount})", infoStyle);
+                GUI.Label(new Rect(padding, y + 44, 400, 25),
+                    $"Origin shifts: {chunkMgr.OriginShiftCount}", infoStyle);
+            }
+
             // Game Over overlay
             if (game != null && game.CurrentState == Core.GameManager.GameState.GameOver)
             {

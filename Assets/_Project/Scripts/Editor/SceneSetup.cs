@@ -11,23 +11,19 @@ namespace ReverseRabbitRunner.Editor
     {
         private const float LaneWidth = 3f;
         private const int MaxLanes = 5;
-        private const float SegmentLength = 40f;
-        private const float GroundWidth = MaxLanes * LaneWidth + 4f;
 
         [MenuItem("ReverseRabbitRunner/Setup Game Scene")]
         public static void SetupGameScene()
         {
             CleanupScene();
             SetupLighting();
-            CreateGround();
-            CreateLaneMarkers();
+            CreateEditorPreviewGround();
             GameObject player = CreatePlayerPlaceholder();
             CreateFarmerPlaceholder(player.transform);
             CreateManagers();
-            CreateSampleCarrots();
             SetupEnvironmentSettings();
 
-            Debug.Log("<b><color=#4CAF50>ReverseRabbitRunner</color></b>: Game scene setup complete!");
+            Debug.Log("<b><color=#4CAF50>ReverseRabbitRunner</color></b>: Game scene setup complete! Chunks spawn at runtime.");
 
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
                 UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
@@ -42,7 +38,7 @@ namespace ReverseRabbitRunner.Editor
             if (dirLight != null) Object.DestroyImmediate(dirLight);
 
             string[] toRemove = { "[Ground]", "[Lanes]", "[Player]", "[Farmer]", "[Managers]",
-                                   "[Environment]", "[Cameras]", "[Sun]", "[Carrots]" };
+                                   "[Environment]", "[Cameras]", "[Sun]", "[Carrots]", "[Chunks]" };
             foreach (var name in toRemove)
             {
                 var obj = GameObject.Find(name);
@@ -63,79 +59,47 @@ namespace ReverseRabbitRunner.Editor
 
         private static GameObject CreateGround()
         {
+            // LEGACY — kept for reference, chunks now handle runtime ground
+            return CreateEditorPreviewGround();
+        }
+
+        /// <summary>
+        /// Small ground visible in the editor. ChunkManager generates the real ground at runtime.
+        /// Tagged so ChunkManager can optionally destroy it on Start.
+        /// </summary>
+        private static GameObject CreateEditorPreviewGround()
+        {
             GameObject groundParent = new GameObject("[Ground]");
 
-            // Farm ground
-            GameObject farmGround = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            farmGround.name = "FarmGround";
-            farmGround.transform.parent = groundParent.transform;
-            // Farm ground — extends 50m behind start (positive direction) and far ahead
-            farmGround.transform.localScale = new Vector3(GroundWidth, 0.1f, SegmentLength * 50 + 50f);
-            farmGround.transform.position = new Vector3(0, -0.05f, -SegmentLength * 25 + 25f);
+            float previewLength = 100f;
+            float groundWidth = MaxLanes * LaneWidth + 4f;
 
-            var groundRenderer = farmGround.GetComponent<Renderer>();
+            // Farm ground preview
+            GameObject farmGround = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            farmGround.name = "PreviewGround";
+            farmGround.transform.parent = groundParent.transform;
+            farmGround.transform.localScale = new Vector3(groundWidth + 50f, 0.1f, previewLength);
+            farmGround.transform.position = new Vector3(0, -0.05f, -previewLength / 2f + 25f);
+
             Material groundMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             groundMat.color = new Color(0.45f, 0.30f, 0.15f);
-            groundMat.name = "FarmGround_Mat";
-            groundRenderer.material = groundMat;
+            farmGround.GetComponent<Renderer>().material = groundMat;
 
-            // Running path — slightly lighter
+            // Running path preview
             GameObject path = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            path.name = "RunningPath";
+            path.name = "PreviewPath";
             path.transform.parent = groundParent.transform;
-            path.transform.localScale = new Vector3(MaxLanes * LaneWidth, 0.12f, SegmentLength * 50 + 50f);
-            path.transform.position = new Vector3(0, -0.04f, -SegmentLength * 25 + 25f);
+            path.transform.localScale = new Vector3(MaxLanes * LaneWidth, 0.12f, previewLength);
+            path.transform.position = new Vector3(0, -0.04f, -previewLength / 2f + 25f);
 
-            var pathRenderer = path.GetComponent<Renderer>();
             Material pathMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             pathMat.color = new Color(0.55f, 0.40f, 0.25f);
-            pathMat.name = "DirtPath_Mat";
-            pathRenderer.material = pathMat;
-
-            // Green carrot field strips on sides
-            for (int side = -1; side <= 1; side += 2)
-            {
-                GameObject field = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                field.name = side < 0 ? "CarrotField_Left" : "CarrotField_Right";
-                field.transform.parent = groundParent.transform;
-                field.transform.localScale = new Vector3(24f, 0.15f, SegmentLength * 50 + 50f);
-                float xPos = side * (GroundWidth / 2f + 12f);
-                field.transform.position = new Vector3(xPos, -0.025f, -SegmentLength * 25 + 25f);
-
-                var fieldRenderer = field.GetComponent<Renderer>();
-                Material fieldMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                fieldMat.color = new Color(0.2f, 0.55f, 0.15f);
-                fieldMat.name = $"CarrotField_{(side < 0 ? "Left" : "Right")}_Mat";
-                fieldRenderer.material = fieldMat;
-            }
+            path.GetComponent<Renderer>().material = pathMat;
 
             return groundParent;
         }
 
-        private static GameObject CreateLaneMarkers()
-        {
-            GameObject laneParent = new GameObject("[Lanes]");
-
-            for (int i = 0; i <= MaxLanes; i++)
-            {
-                float xPos = (i - MaxLanes / 2f) * LaneWidth;
-
-                GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                marker.name = $"LaneDivider_{i}";
-                marker.transform.parent = laneParent.transform;
-                marker.transform.localScale = new Vector3(0.05f, 0.02f, SegmentLength * 5);
-                marker.transform.position = new Vector3(xPos, 0.01f, -SegmentLength * 2);
-
-                Object.DestroyImmediate(marker.GetComponent<Collider>());
-
-                var renderer = marker.GetComponent<Renderer>();
-                Material lineMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                lineMat.color = new Color(0.7f, 0.55f, 0.35f, 0.5f);
-                renderer.material = lineMat;
-            }
-
-            return laneParent;
-        }
+        // CreateLaneMarkers — now handled by ChunkManager at runtime
 
         private static GameObject CreatePlayerPlaceholder()
         {
@@ -679,6 +643,10 @@ namespace ReverseRabbitRunner.Editor
             lgObj.transform.parent = managers.transform;
             lgObj.AddComponent<World.LaneGenerator>();
 
+            // Chunk-based infinite world (replaces static ground/carrots)
+            GameObject chunkObj = new GameObject("[Chunks]");
+            chunkObj.AddComponent<World.ChunkManager>();
+
             GameObject osObj = new GameObject("ObstacleSpawner");
             osObj.transform.parent = managers.transform;
             osObj.AddComponent<World.ObstacleSpawner>();
@@ -696,50 +664,7 @@ namespace ReverseRabbitRunner.Editor
             return managers;
         }
 
-        private static void CreateSampleCarrots()
-        {
-            GameObject carrotParent = new GameObject("[Carrots]");
-
-            // Place lots of carrots along the path
-            for (int i = 0; i < 300; i++)
-            {
-                int lane = Random.Range(0, MaxLanes);
-                float xPos = (lane - MaxLanes / 2) * LaneWidth;
-                float zPos = -(i * 4f + 8f);
-
-                GameObject carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                carrot.name = $"Carrot_{i}";
-                carrot.tag = "Carrot";
-                carrot.transform.parent = carrotParent.transform;
-                carrot.transform.position = new Vector3(xPos, 0.44f, zPos);
-                carrot.transform.localScale = new Vector3(0.34f, 0.68f, 0.34f);
-                carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);// pointy end up
-
-                // Carrot top (green leaves)
-                GameObject leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                leaves.name = "CarrotLeaves";
-                leaves.transform.parent = carrot.transform;
-                leaves.transform.localPosition = new Vector3(0, -0.7f, 0);
-                leaves.transform.localScale = new Vector3(2f, 0.3f, 2f);
-                Object.DestroyImmediate(leaves.GetComponent<Collider>());
-
-                var leavesRenderer = leaves.GetComponent<Renderer>();
-                Material leavesMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                leavesMat.color = new Color(0.1f, 0.6f, 0.1f);
-                leavesRenderer.material = leavesMat;
-
-                // Orange carrot body
-                var carrotRenderer = carrot.GetComponent<Renderer>();
-                Material carrotMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                carrotMat.color = new Color(1f, 0.5f, 0.05f); // bright orange
-                carrotMat.name = "Carrot_Mat";
-                carrotRenderer.material = carrotMat;
-
-                // Make it a trigger
-                carrot.GetComponent<Collider>().isTrigger = true;
-                carrot.AddComponent<World.CarrotBob>();
-            }
-        }
+        // CreateSampleCarrots — now handled by ChunkManager at runtime
 
         private static void SetupEnvironmentSettings()
         {
