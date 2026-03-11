@@ -174,7 +174,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject eye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 eye.name = side < 0 ? "LeftEye" : "RightEye";
                 eye.transform.parent = head.transform;
-                eye.transform.localPosition = new Vector3(side * 0.25f, 0.1f, -0.8f);
+                eye.transform.localPosition = new Vector3(side * 0.25f, 0.1f, 0.8f);
                 eye.transform.localScale = new Vector3(0.25f, 0.3f, 0.15f);
                 Object.DestroyImmediate(eye.GetComponent<Collider>());
 
@@ -187,7 +187,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject pupil = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 pupil.name = "Pupil";
                 pupil.transform.parent = eye.transform;
-                pupil.transform.localPosition = new Vector3(0, 0, -0.35f);
+                pupil.transform.localPosition = new Vector3(0, 0, 0.35f);
                 pupil.transform.localScale = new Vector3(0.45f, 0.55f, 0.4f);
                 Object.DestroyImmediate(pupil.GetComponent<Collider>());
 
@@ -201,7 +201,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject nose = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             nose.name = "RabbitNose";
             nose.transform.parent = head.transform;
-            nose.transform.localPosition = new Vector3(0, -0.1f, -0.9f);
+            nose.transform.localPosition = new Vector3(0, -0.1f, 0.9f);
             nose.transform.localScale = new Vector3(0.15f, 0.12f, 0.1f);
             Object.DestroyImmediate(nose.GetComponent<Collider>());
 
@@ -214,7 +214,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject teeth = GameObject.CreatePrimitive(PrimitiveType.Cube);
             teeth.name = "BuckTeeth";
             teeth.transform.parent = head.transform;
-            teeth.transform.localPosition = new Vector3(0, -0.3f, -0.85f);
+            teeth.transform.localPosition = new Vector3(0, -0.3f, 0.85f);
             teeth.transform.localScale = new Vector3(0.15f, 0.15f, 0.05f);
             Object.DestroyImmediate(teeth.GetComponent<Collider>());
 
@@ -383,7 +383,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject eye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 eye.name = side < 0 ? "LeftEye" : "RightEye";
                 eye.transform.parent = head.transform;
-                eye.transform.localPosition = new Vector3(side * 0.25f, 0.15f, -0.85f);
+                eye.transform.localPosition = new Vector3(side * 0.25f, 0.15f, 0.85f);
                 eye.transform.localScale = new Vector3(0.25f, 0.15f, 0.15f);
                 Object.DestroyImmediate(eye.GetComponent<Collider>());
 
@@ -396,7 +396,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject pupil = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 pupil.name = "Pupil";
                 pupil.transform.parent = eye.transform;
-                pupil.transform.localPosition = new Vector3(0, 0, -0.4f);
+                pupil.transform.localPosition = new Vector3(0, 0, 0.4f);
                 pupil.transform.localScale = new Vector3(0.5f, 0.7f, 0.5f);
                 Object.DestroyImmediate(pupil.GetComponent<Collider>());
 
@@ -409,7 +409,7 @@ namespace ReverseRabbitRunner.Editor
                 GameObject brow = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 brow.name = side < 0 ? "LeftBrow" : "RightBrow";
                 brow.transform.parent = head.transform;
-                brow.transform.localPosition = new Vector3(side * 0.25f, 0.35f, -0.85f);
+                brow.transform.localPosition = new Vector3(side * 0.25f, 0.35f, 0.85f);
                 brow.transform.localScale = new Vector3(0.3f, 0.06f, 0.1f);
                 brow.transform.localRotation = Quaternion.Euler(0, 0, side * 25f); // angry angle
                 Object.DestroyImmediate(brow.GetComponent<Collider>());
@@ -424,7 +424,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject mouth = GameObject.CreatePrimitive(PrimitiveType.Cube);
             mouth.name = "Mouth";
             mouth.transform.parent = head.transform;
-            mouth.transform.localPosition = new Vector3(0, -0.2f, -0.9f);
+            mouth.transform.localPosition = new Vector3(0, -0.2f, 0.9f);
             mouth.transform.localScale = new Vector3(0.35f, 0.08f, 0.05f);
             mouth.transform.localRotation = Quaternion.Euler(0, 0, 5f);
             Object.DestroyImmediate(mouth.GetComponent<Collider>());
