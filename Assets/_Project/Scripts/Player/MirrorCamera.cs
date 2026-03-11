@@ -94,16 +94,26 @@ namespace ReverseRabbitRunner.Player
 
             float dt = Time.deltaTime;
 
-            // Left mirror yaw: Numpad 4/6
+            // Both mirrors yaw: Numpad 4/6
             if (kb.numpad4Key.isPressed)
+            {
                 leftYawOffset = Mathf.Clamp(leftYawOffset - adjustSpeed * dt, -maxYawOffset, maxYawOffset);
-            if (kb.numpad6Key.isPressed)
-                leftYawOffset = Mathf.Clamp(leftYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
-
-            // Right mirror yaw: Numpad 7/9
-            if (kb.numpad7Key.isPressed)
                 rightYawOffset = Mathf.Clamp(rightYawOffset - adjustSpeed * dt, -maxYawOffset, maxYawOffset);
+            }
+            if (kb.numpad6Key.isPressed)
+            {
+                leftYawOffset = Mathf.Clamp(leftYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
+                rightYawOffset = Mathf.Clamp(rightYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
+            }
+
+            // Individual mirror yaw: Numpad 7/9 (left only), 1/3 (right only)
+            if (kb.numpad7Key.isPressed)
+                leftYawOffset = Mathf.Clamp(leftYawOffset - adjustSpeed * dt, -maxYawOffset, maxYawOffset);
             if (kb.numpad9Key.isPressed)
+                leftYawOffset = Mathf.Clamp(leftYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
+            if (kb.numpad1Key.isPressed)
+                rightYawOffset = Mathf.Clamp(rightYawOffset - adjustSpeed * dt, -maxYawOffset, maxYawOffset);
+            if (kb.numpad3Key.isPressed)
                 rightYawOffset = Mathf.Clamp(rightYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
 
             // Both mirrors pitch: Numpad 8/2
