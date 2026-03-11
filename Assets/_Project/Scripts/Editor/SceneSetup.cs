@@ -206,7 +206,7 @@ namespace ReverseRabbitRunner.Editor
             GameObject mainCamObj = new GameObject("MainCamera");
             mainCamObj.tag = "MainCamera";
             mainCamObj.transform.parent = cameraParent.transform;
-            mainCamObj.transform.position = new Vector3(0, 3f, -8f);
+            mainCamObj.transform.position = new Vector3(0, 3f, 8f);
             mainCamObj.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
             Camera mainCam = mainCamObj.AddComponent<Camera>();
             mainCam.fieldOfView = 60f;
@@ -214,6 +214,9 @@ namespace ReverseRabbitRunner.Editor
             mainCam.farClipPlane = 200f;
             mainCamObj.AddComponent<AudioListener>();
             mainCamObj.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+
+            // CameraFollow for smooth tracking
+            var camFollow = mainCamObj.AddComponent<Player.CameraFollow>();
 
             return playerParent;
         }
@@ -292,6 +295,16 @@ namespace ReverseRabbitRunner.Editor
             GameObject osObj = new GameObject("ObstacleSpawner");
             osObj.transform.parent = managers.transform;
             osObj.AddComponent<World.ObstacleSpawner>();
+
+            // HUD
+            GameObject hudObj = new GameObject("GameHUD");
+            hudObj.transform.parent = managers.transform;
+            hudObj.AddComponent<UI.GameHUD>();
+
+            // Auto-start helper
+            GameObject autoStart = new GameObject("AutoStart");
+            autoStart.transform.parent = managers.transform;
+            autoStart.AddComponent<Core.AutoStartGame>();
 
             return managers;
         }
