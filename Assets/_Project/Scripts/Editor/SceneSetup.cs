@@ -142,53 +142,171 @@ namespace ReverseRabbitRunner.Editor
             playerParent.tag = "Player";
             playerParent.transform.position = new Vector3(0, 1f, 0);
 
-            // Rabbit body — positioned so bottom is at the parent's origin
+            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
+
+            // Rabbit body — round and cute
             GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             body.name = "RabbitBody";
             body.transform.parent = playerParent.transform;
             body.transform.localPosition = new Vector3(0, 0f, 0);
-            body.transform.localScale = new Vector3(0.6f, 0.5f, 0.6f);
-            // Remove capsule's own collider (CharacterController handles collision)
+            body.transform.localScale = new Vector3(0.6f, 0.5f, 0.55f);
             Object.DestroyImmediate(body.GetComponent<Collider>());
 
             var bodyRenderer = body.GetComponent<Renderer>();
-            Material rabbitMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            rabbitMat.color = new Color(0.9f, 0.9f, 0.9f);
+            Material rabbitMat = new Material(urpLit);
+            rabbitMat.color = new Color(0.92f, 0.92f, 0.92f);
             rabbitMat.name = "Rabbit_Mat";
             bodyRenderer.material = rabbitMat;
 
-            // Ears with mirrors
+            // Head (slightly larger sphere)
+            GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            head.name = "RabbitHead";
+            head.transform.parent = playerParent.transform;
+            head.transform.localPosition = new Vector3(0, 0.55f, 0);
+            head.transform.localScale = new Vector3(0.5f, 0.45f, 0.45f);
+            Object.DestroyImmediate(head.GetComponent<Collider>());
+            head.GetComponent<Renderer>().material = rabbitMat;
+
+            // Rabbit face — eyes
             for (int side = -1; side <= 1; side += 2)
             {
+                // Eye whites
+                GameObject eye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                eye.name = side < 0 ? "LeftEye" : "RightEye";
+                eye.transform.parent = head.transform;
+                eye.transform.localPosition = new Vector3(side * 0.25f, 0.1f, -0.8f);
+                eye.transform.localScale = new Vector3(0.25f, 0.3f, 0.15f);
+                Object.DestroyImmediate(eye.GetComponent<Collider>());
+
+                var eyeRenderer = eye.GetComponent<Renderer>();
+                Material eyeMat = new Material(urpLit);
+                eyeMat.color = Color.white;
+                eyeRenderer.material = eyeMat;
+
+                // Pupils
+                GameObject pupil = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                pupil.name = "Pupil";
+                pupil.transform.parent = eye.transform;
+                pupil.transform.localPosition = new Vector3(0, 0, -0.35f);
+                pupil.transform.localScale = new Vector3(0.45f, 0.55f, 0.4f);
+                Object.DestroyImmediate(pupil.GetComponent<Collider>());
+
+                var pupilRenderer = pupil.GetComponent<Renderer>();
+                Material pupilMat = new Material(urpLit);
+                pupilMat.color = new Color(0.1f, 0.05f, 0.0f);
+                pupilRenderer.material = pupilMat;
+            }
+
+            // Rabbit nose (pink sphere)
+            GameObject nose = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            nose.name = "RabbitNose";
+            nose.transform.parent = head.transform;
+            nose.transform.localPosition = new Vector3(0, -0.1f, -0.9f);
+            nose.transform.localScale = new Vector3(0.15f, 0.12f, 0.1f);
+            Object.DestroyImmediate(nose.GetComponent<Collider>());
+
+            var noseRenderer = nose.GetComponent<Renderer>();
+            Material noseMat = new Material(urpLit);
+            noseMat.color = new Color(1f, 0.5f, 0.6f);
+            noseRenderer.material = noseMat;
+
+            // Buck teeth
+            GameObject teeth = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            teeth.name = "BuckTeeth";
+            teeth.transform.parent = head.transform;
+            teeth.transform.localPosition = new Vector3(0, -0.3f, -0.85f);
+            teeth.transform.localScale = new Vector3(0.15f, 0.15f, 0.05f);
+            Object.DestroyImmediate(teeth.GetComponent<Collider>());
+
+            var teethRenderer = teeth.GetComponent<Renderer>();
+            Material teethMat = new Material(urpLit);
+            teethMat.color = Color.white;
+            teethRenderer.material = teethMat;
+
+            // Fluffy tail
+            GameObject tail = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            tail.name = "RabbitTail";
+            tail.transform.parent = playerParent.transform;
+            tail.transform.localPosition = new Vector3(0, 0f, 0.4f);
+            tail.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
+            Object.DestroyImmediate(tail.GetComponent<Collider>());
+            tail.GetComponent<Renderer>().material = rabbitMat;
+
+            // LARGE ears with side mirrors
+            for (int side = -1; side <= 1; side += 2)
+            {
+                // Ear — tall, slightly tilted outward
                 GameObject ear = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 ear.name = side < 0 ? "LeftEar" : "RightEar";
                 ear.transform.parent = playerParent.transform;
-                ear.transform.localPosition = new Vector3(side * 0.15f, 0.7f, 0);
-                ear.transform.localScale = new Vector3(0.08f, 0.4f, 0.05f);
-                ear.transform.localRotation = Quaternion.Euler(0, 0, side * -10f);
+                ear.transform.localPosition = new Vector3(side * 0.18f, 0.95f, 0);
+                ear.transform.localScale = new Vector3(0.12f, 0.55f, 0.08f);
+                ear.transform.localRotation = Quaternion.Euler(0, 0, side * -12f);
                 Object.DestroyImmediate(ear.GetComponent<Collider>());
 
-                var earRenderer = ear.GetComponent<Renderer>();
-                Material earMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                earMat.color = new Color(1f, 0.85f, 0.85f);
-                earRenderer.material = earMat;
+                // Pink inner ear
+                Material earMat = new Material(urpLit);
+                earMat.color = new Color(1f, 0.8f, 0.85f);
+                ear.GetComponent<Renderer>().material = earMat;
 
-                // Mirror on ear
-                GameObject mirror = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                mirror.name = side < 0 ? "LeftMirror" : "RightMirror";
-                mirror.transform.parent = ear.transform;
-                mirror.transform.localPosition = new Vector3(side * 0.6f, 0.3f, 0);
-                mirror.transform.localScale = new Vector3(0.8f, 0.5f, 1f);
-                mirror.transform.localRotation = Quaternion.Euler(0, side * 45f, 0);
-                Object.DestroyImmediate(mirror.GetComponent<Collider>());
+                // Ear inner (darker pink strip)
+                GameObject earInner = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                earInner.name = "EarInner";
+                earInner.transform.parent = ear.transform;
+                earInner.transform.localPosition = new Vector3(0, 0, -0.05f);
+                earInner.transform.localScale = new Vector3(0.6f, 0.8f, 0.5f);
+                Object.DestroyImmediate(earInner.GetComponent<Collider>());
 
-                var mirrorRenderer = mirror.GetComponent<Renderer>();
-                Material mirrorMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                Material innerMat = new Material(urpLit);
+                innerMat.color = new Color(1f, 0.6f, 0.7f);
+                earInner.GetComponent<Renderer>().material = innerMat;
+
+                // MIRROR — attached to the outer side of each ear
+                // Like a car side mirror, angled to show what's behind the rabbit
+                GameObject mirrorMount = new GameObject(side < 0 ? "LeftMirrorMount" : "RightMirrorMount");
+                mirrorMount.transform.parent = ear.transform;
+                mirrorMount.transform.localPosition = new Vector3(side * 1.2f, 0.3f, 0);
+                mirrorMount.transform.localRotation = Quaternion.Euler(10f, side * -50f, 0);
+
+                // Mirror backing (dark frame)
+                GameObject mirrorFrame = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                mirrorFrame.name = "MirrorFrame";
+                mirrorFrame.transform.parent = mirrorMount.transform;
+                mirrorFrame.transform.localPosition = Vector3.zero;
+                mirrorFrame.transform.localScale = new Vector3(1.2f, 0.8f, 0.15f);
+                Object.DestroyImmediate(mirrorFrame.GetComponent<Collider>());
+
+                Material frameMat = new Material(urpLit);
+                frameMat.color = new Color(0.2f, 0.2f, 0.2f);
+                mirrorFrame.GetComponent<Renderer>().material = frameMat;
+
+                // Mirror surface (reflective quad) — will show RenderTexture later
+                GameObject mirrorSurface = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                mirrorSurface.name = side < 0 ? "LeftMirror" : "RightMirror";
+                mirrorSurface.transform.parent = mirrorMount.transform;
+                mirrorSurface.transform.localPosition = new Vector3(0, 0, -0.09f);
+                mirrorSurface.transform.localScale = new Vector3(1f, 0.65f, 1f);
+                Object.DestroyImmediate(mirrorSurface.GetComponent<Collider>());
+
+                Material mirrorMat = new Material(urpLit);
                 mirrorMat.color = new Color(0.7f, 0.85f, 1f);
                 mirrorMat.SetFloat("_Smoothness", 0.95f);
-                mirrorMat.SetFloat("_Metallic", 0.8f);
-                mirrorMat.name = $"{mirror.name}_Mat";
-                mirrorRenderer.material = mirrorMat;
+                mirrorMat.SetFloat("_Metallic", 0.9f);
+                mirrorMat.name = $"{mirrorSurface.name}_Mat";
+                mirrorSurface.GetComponent<Renderer>().material = mirrorMat;
+
+                // Mirror support arm (thin cylinder connecting ear to mirror)
+                GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                arm.name = "MirrorArm";
+                arm.transform.parent = ear.transform;
+                arm.transform.localPosition = new Vector3(side * 0.6f, 0.3f, 0);
+                arm.transform.localScale = new Vector3(0.15f, 0.08f, 0.15f);
+                arm.transform.localRotation = Quaternion.Euler(0, 0, 90f);
+                Object.DestroyImmediate(arm.GetComponent<Collider>());
+
+                Material armMat = new Material(urpLit);
+                armMat.color = new Color(0.3f, 0.3f, 0.3f);
+                arm.GetComponent<Renderer>().material = armMat;
             }
 
             // CharacterController — skinWidth keeps rabbit above ground
@@ -201,7 +319,7 @@ namespace ReverseRabbitRunner.Editor
             // RabbitController
             playerParent.AddComponent<Player.RabbitController>();
 
-            // Face backwards
+            // Face backwards (rabbit runs in -Z but faces +Z)
             playerParent.transform.rotation = Quaternion.Euler(0, 180f, 0);
 
             // --- Main Camera ---
@@ -230,39 +348,145 @@ namespace ReverseRabbitRunner.Editor
             farmerParent.tag = "Farmer";
             farmerParent.transform.position = new Vector3(0, 0, 15f);
 
-            // Try to load the Adventure Character prefab
-            GameObject farmerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
-                "Assets/Adventure_Character/Prefabs/Man_01.prefab");
+            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
 
-            if (farmerPrefab != null)
+            // Farmer body
+            GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            body.name = "FarmerBody";
+            body.transform.parent = farmerParent.transform;
+            body.transform.localPosition = new Vector3(0, 1f, 0);
+            body.transform.localScale = new Vector3(0.8f, 1f, 0.8f);
+
+            var bodyRenderer = body.GetComponent<Renderer>();
+            Material farmerMat = new Material(urpLit);
+            farmerMat.color = new Color(0.3f, 0.15f, 0.05f); // dark brown overalls
+            farmerMat.name = "Farmer_Body_Mat";
+            bodyRenderer.material = farmerMat;
+
+            // Head
+            GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            head.name = "FarmerHead";
+            head.transform.parent = farmerParent.transform;
+            head.transform.localPosition = new Vector3(0, 2.1f, 0);
+            head.transform.localScale = new Vector3(0.5f, 0.55f, 0.5f);
+            Object.DestroyImmediate(head.GetComponent<Collider>());
+
+            var headRenderer = head.GetComponent<Renderer>();
+            Material skinMat = new Material(urpLit);
+            skinMat.color = new Color(0.9f, 0.72f, 0.55f); // skin tone
+            skinMat.name = "Farmer_Skin_Mat";
+            headRenderer.material = skinMat;
+
+            // Angry eyes (two small dark spheres)
+            for (int side = -1; side <= 1; side += 2)
             {
-                GameObject farmerModel = (GameObject)PrefabUtility.InstantiatePrefab(farmerPrefab);
-                farmerModel.name = "FarmerModel";
-                farmerModel.transform.parent = farmerParent.transform;
-                farmerModel.transform.localPosition = Vector3.zero;
-                farmerModel.transform.localScale = Vector3.one * 2.3f;
-                // Face towards the rabbit (which is at -Z from the farmer)
-                farmerModel.transform.localRotation = Quaternion.identity;
+                GameObject eye = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                eye.name = side < 0 ? "LeftEye" : "RightEye";
+                eye.transform.parent = head.transform;
+                eye.transform.localPosition = new Vector3(side * 0.25f, 0.15f, -0.85f);
+                eye.transform.localScale = new Vector3(0.25f, 0.15f, 0.15f);
+                Object.DestroyImmediate(eye.GetComponent<Collider>());
 
-                // Fix pink materials — upgrade to URP Lit shader
-                UpgradeMaterialsToURP(farmerModel);
+                var eyeRenderer = eye.GetComponent<Renderer>();
+                Material eyeMat = new Material(urpLit);
+                eyeMat.color = Color.white;
+                eyeRenderer.material = eyeMat;
+
+                // Pupils
+                GameObject pupil = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                pupil.name = "Pupil";
+                pupil.transform.parent = eye.transform;
+                pupil.transform.localPosition = new Vector3(0, 0, -0.4f);
+                pupil.transform.localScale = new Vector3(0.5f, 0.7f, 0.5f);
+                Object.DestroyImmediate(pupil.GetComponent<Collider>());
+
+                var pupilRenderer = pupil.GetComponent<Renderer>();
+                Material pupilMat = new Material(urpLit);
+                pupilMat.color = new Color(0.15f, 0.05f, 0.0f); // dark angry eyes
+                pupilRenderer.material = pupilMat;
+
+                // Angry eyebrows (angled cubes above eyes)
+                GameObject brow = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                brow.name = side < 0 ? "LeftBrow" : "RightBrow";
+                brow.transform.parent = head.transform;
+                brow.transform.localPosition = new Vector3(side * 0.25f, 0.35f, -0.85f);
+                brow.transform.localScale = new Vector3(0.3f, 0.06f, 0.1f);
+                brow.transform.localRotation = Quaternion.Euler(0, 0, side * 25f); // angry angle
+                Object.DestroyImmediate(brow.GetComponent<Collider>());
+
+                var browRenderer = brow.GetComponent<Renderer>();
+                Material browMat = new Material(urpLit);
+                browMat.color = new Color(0.25f, 0.15f, 0.05f);
+                browRenderer.material = browMat;
             }
-            else
+
+            // Angry mouth (flat red cube)
+            GameObject mouth = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            mouth.name = "Mouth";
+            mouth.transform.parent = head.transform;
+            mouth.transform.localPosition = new Vector3(0, -0.2f, -0.9f);
+            mouth.transform.localScale = new Vector3(0.35f, 0.08f, 0.05f);
+            mouth.transform.localRotation = Quaternion.Euler(0, 0, 5f);
+            Object.DestroyImmediate(mouth.GetComponent<Collider>());
+
+            var mouthRenderer = mouth.GetComponent<Renderer>();
+            Material mouthMat = new Material(urpLit);
+            mouthMat.color = new Color(0.6f, 0.15f, 0.1f);
+            mouthRenderer.material = mouthMat;
+
+            // Straw hat
+            GameObject hat = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            hat.name = "FarmerHat";
+            hat.transform.parent = farmerParent.transform;
+            hat.transform.localPosition = new Vector3(0, 2.5f, 0);
+            hat.transform.localScale = new Vector3(0.9f, 0.1f, 0.9f);
+            Object.DestroyImmediate(hat.GetComponent<Collider>());
+
+            var hatRenderer = hat.GetComponent<Renderer>();
+            Material hatMat = new Material(urpLit);
+            hatMat.color = new Color(0.85f, 0.78f, 0.45f); // straw color
+            hatMat.name = "Farmer_Hat_Mat";
+            hatRenderer.material = hatMat;
+
+            // Hat top
+            GameObject hatTop = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            hatTop.name = "HatTop";
+            hatTop.transform.parent = farmerParent.transform;
+            hatTop.transform.localPosition = new Vector3(0, 2.65f, 0);
+            hatTop.transform.localScale = new Vector3(0.5f, 0.15f, 0.5f);
+            Object.DestroyImmediate(hatTop.GetComponent<Collider>());
+
+            var hatTopRenderer = hatTop.GetComponent<Renderer>();
+            hatTopRenderer.material = hatMat;
+
+            // Pitchfork handle
+            GameObject fork = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            fork.name = "PitchforkHandle";
+            fork.transform.parent = farmerParent.transform;
+            fork.transform.localPosition = new Vector3(0.5f, 1.3f, 0.2f);
+            fork.transform.localScale = new Vector3(0.04f, 0.9f, 0.04f);
+            fork.transform.localRotation = Quaternion.Euler(0, 0, -15f);
+            Object.DestroyImmediate(fork.GetComponent<Collider>());
+
+            var forkRenderer = fork.GetComponent<Renderer>();
+            Material forkMat = new Material(urpLit);
+            forkMat.color = new Color(0.5f, 0.35f, 0.15f); // wood
+            forkRenderer.material = forkMat;
+
+            // Pitchfork prongs
+            for (int i = -1; i <= 1; i++)
             {
-                // Fallback: primitive placeholder
-                GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                body.name = "FarmerBody";
-                body.transform.parent = farmerParent.transform;
-                body.transform.localPosition = new Vector3(0, 1f, 0);
-                body.transform.localScale = new Vector3(0.8f, 1f, 0.8f);
+                GameObject prong = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                prong.name = $"Prong_{i+1}";
+                prong.transform.parent = fork.transform;
+                prong.transform.localPosition = new Vector3(i * 1.5f, -1.1f, 0);
+                prong.transform.localScale = new Vector3(0.4f, 0.25f, 0.4f);
+                Object.DestroyImmediate(prong.GetComponent<Collider>());
 
-                var bodyRenderer = body.GetComponent<Renderer>();
-                Material farmerMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                farmerMat.color = new Color(0.6f, 0.3f, 0.15f);
-                farmerMat.name = "Farmer_Mat";
-                bodyRenderer.material = farmerMat;
-
-                Debug.LogWarning("Adventure Character prefab not found at Assets/Adventure_Character/Prefabs/Man_01.prefab — using placeholder");
+                var prongRenderer = prong.GetComponent<Renderer>();
+                Material prongMat = new Material(urpLit);
+                prongMat.color = new Color(0.6f, 0.6f, 0.6f); // metal
+                prongRenderer.material = prongMat;
             }
 
             farmerParent.AddComponent<Enemies.FarmerController>();
@@ -363,74 +587,5 @@ namespace ReverseRabbitRunner.Editor
             RenderSettings.fogEndDistance = 120f;
         }
 
-        /// <summary>
-        /// Upgrades all materials on a GameObject to URP Lit shader,
-        /// preserving their albedo textures.
-        /// </summary>
-        private static void UpgradeMaterialsToURP(GameObject obj)
-        {
-            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
-            if (urpLit == null)
-            {
-                Debug.LogWarning("URP Lit shader not found — cannot upgrade materials");
-                return;
-            }
-
-            var renderers = obj.GetComponentsInChildren<Renderer>(true);
-            foreach (var renderer in renderers)
-            {
-                var mats = renderer.sharedMaterials;
-                for (int i = 0; i < mats.Length; i++)
-                {
-                    if (mats[i] == null) continue;
-                    if (mats[i].shader == urpLit) continue; // already URP
-
-                    // Create a new URP material preserving textures
-                    Material newMat = new Material(urpLit);
-                    newMat.name = mats[i].name + "_URP";
-
-                    // Copy albedo texture if present
-                    if (mats[i].HasProperty("_MainTex"))
-                    {
-                        Texture mainTex = mats[i].GetTexture("_MainTex");
-                        if (mainTex != null)
-                            newMat.SetTexture("_BaseMap", mainTex);
-                    }
-
-                    // Copy color
-                    if (mats[i].HasProperty("_Color"))
-                        newMat.SetColor("_BaseColor", mats[i].GetColor("_Color"));
-
-                    // Copy normal map if present
-                    if (mats[i].HasProperty("_BumpMap"))
-                    {
-                        Texture normalTex = mats[i].GetTexture("_BumpMap");
-                        if (normalTex != null)
-                        {
-                            newMat.SetTexture("_BumpMap", normalTex);
-                            newMat.EnableKeyword("_NORMALMAP");
-                        }
-                    }
-
-                    // Copy metallic/smoothness
-                    if (mats[i].HasProperty("_MetallicGlossMap"))
-                    {
-                        Texture metalTex = mats[i].GetTexture("_MetallicGlossMap");
-                        if (metalTex != null)
-                            newMat.SetTexture("_MetallicGlossMap", metalTex);
-                    }
-
-                    if (mats[i].HasProperty("_OcclusionMap"))
-                    {
-                        Texture aoTex = mats[i].GetTexture("_OcclusionMap");
-                        if (aoTex != null)
-                            newMat.SetTexture("_OcclusionMap", aoTex);
-                    }
-
-                    mats[i] = newMat;
-                }
-                renderer.sharedMaterials = mats;
-            }
-        }
     }
 }
