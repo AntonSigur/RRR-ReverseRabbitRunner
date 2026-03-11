@@ -25,13 +25,20 @@ namespace ReverseRabbitRunner.Enemies
         private Player.RabbitController rabbitController;
 
         public float CurrentDistance => currentDistance;
-        public float NormalizedThreat => 1f - (currentDistance / baseDistance);
+        public float NormalizedThreat => 1f - Mathf.Clamp01(currentDistance / baseDistance);
 
         public event System.Action OnCaughtRabbit;
 
         private void Start()
         {
             currentDistance = baseDistance;
+
+            // Auto-find player if not assigned
+            if (playerTransform == null)
+            {
+                var playerObj = GameObject.FindGameObjectWithTag("Player");
+                if (playerObj != null) playerTransform = playerObj.transform;
+            }
 
             if (playerTransform != null)
             {
@@ -51,9 +58,10 @@ namespace ReverseRabbitRunner.Enemies
             // Farmer slowly falls back over time (rabbit outrunning)
             currentDistance = Mathf.Min(currentDistance + fallBackSpeed * Time.deltaTime, baseDistance);
 
-            // Position the farmer relative to the rabbit (in front, since rabbit runs backwards)
+            // Position the farmer relative to the rabbit (in +Z direction, visible to the camera)
             Vector3 farmerPos = playerTransform.position;
             farmerPos.z += currentDistance;
+            farmerPos.y = 0; // Keep farmer on ground
             transform.position = farmerPos;
 
             // Check if farmer caught the rabbit
@@ -65,7 +73,6 @@ namespace ReverseRabbitRunner.Enemies
 
         private void OnRabbitHitObstacle()
         {
-            // Farmer gets closer when rabbit hits obstacle
             currentDistance = Mathf.Max(catchDistance, currentDistance - obstaclePenaltyDistance);
         }
 

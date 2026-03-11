@@ -140,14 +140,16 @@ namespace ReverseRabbitRunner.Editor
         {
             GameObject playerParent = new GameObject("[Player]");
             playerParent.tag = "Player";
-            playerParent.transform.position = new Vector3(0, 0.5f, 0);
+            playerParent.transform.position = new Vector3(0, 1f, 0);
 
-            // Rabbit body
+            // Rabbit body — positioned so bottom is at the parent's origin
             GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             body.name = "RabbitBody";
             body.transform.parent = playerParent.transform;
-            body.transform.localPosition = Vector3.zero;
+            body.transform.localPosition = new Vector3(0, 0f, 0);
             body.transform.localScale = new Vector3(0.6f, 0.5f, 0.6f);
+            // Remove capsule's own collider (CharacterController handles collision)
+            Object.DestroyImmediate(body.GetComponent<Collider>());
 
             var bodyRenderer = body.GetComponent<Renderer>();
             Material rabbitMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
@@ -189,11 +191,12 @@ namespace ReverseRabbitRunner.Editor
                 mirrorRenderer.material = mirrorMat;
             }
 
-            // CharacterController
+            // CharacterController — skinWidth keeps rabbit above ground
             CharacterController cc = playerParent.AddComponent<CharacterController>();
-            cc.center = new Vector3(0, 0.5f, 0);
+            cc.center = new Vector3(0, 0f, 0);
             cc.radius = 0.3f;
             cc.height = 1f;
+            cc.skinWidth = 0.08f;
 
             // RabbitController
             playerParent.AddComponent<Player.RabbitController>();
@@ -313,12 +316,12 @@ namespace ReverseRabbitRunner.Editor
         {
             GameObject carrotParent = new GameObject("[Carrots]");
 
-            // Place a few sample carrots along the path to visualize
-            for (int i = 0; i < 15; i++)
+            // Place lots of carrots along the path
+            for (int i = 0; i < 60; i++)
             {
                 int lane = Random.Range(0, MaxLanes);
                 float xPos = (lane - MaxLanes / 2) * LaneWidth;
-                float zPos = -(i * 5f + 10f);
+                float zPos = -(i * 4f + 8f);
 
                 GameObject carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 carrot.name = $"Carrot_{i}";
@@ -326,7 +329,7 @@ namespace ReverseRabbitRunner.Editor
                 carrot.transform.parent = carrotParent.transform;
                 carrot.transform.position = new Vector3(xPos, 0.3f, zPos);
                 carrot.transform.localScale = new Vector3(0.15f, 0.3f, 0.15f);
-                carrot.transform.rotation = Quaternion.Euler(0, 0, 180f); // pointy end up
+                carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);// pointy end up
 
                 // Carrot top (green leaves)
                 GameObject leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
