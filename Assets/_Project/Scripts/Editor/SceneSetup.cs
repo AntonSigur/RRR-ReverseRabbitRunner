@@ -472,7 +472,7 @@ namespace ReverseRabbitRunner.Editor
 
             var hatRenderer = hat.GetComponent<Renderer>();
             Material hatMat = new Material(urpLit);
-            hatMat.color = new Color(0.85f, 0.78f, 0.45f); // straw color
+            hatMat.color = new Color(0.85f, 0.78f, 0.45f);
             hatMat.name = "Farmer_Hat_Mat";
             hatRenderer.material = hatMat;
 
@@ -483,23 +483,55 @@ namespace ReverseRabbitRunner.Editor
             hatTop.transform.localPosition = new Vector3(0, 2.65f, 0);
             hatTop.transform.localScale = new Vector3(0.5f, 0.15f, 0.5f);
             Object.DestroyImmediate(hatTop.GetComponent<Collider>());
+            hatTop.GetComponent<Renderer>().material = hatMat;
 
-            var hatTopRenderer = hatTop.GetComponent<Renderer>();
-            hatTopRenderer.material = hatMat;
+            // Farmer arms and hands
+            Material armMat = new Material(urpLit);
+            armMat.color = new Color(0.3f, 0.15f, 0.05f); // overalls sleeves
+            Material handMat = new Material(urpLit);
+            handMat.color = new Color(0.9f, 0.72f, 0.55f); // skin
 
-            // Pitchfork handle
+            for (int side = -1; side <= 1; side += 2)
+            {
+                string armSide = side < 0 ? "Left" : "Right";
+
+                // Upper arm
+                GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                arm.name = $"{armSide}Arm";
+                arm.transform.parent = farmerParent.transform;
+                arm.transform.localPosition = new Vector3(side * 0.5f, 1.3f, 0f);
+                arm.transform.localScale = new Vector3(0.12f, 0.35f, 0.12f);
+                arm.transform.localRotation = Quaternion.Euler(0, 0, side * -25f);
+                Object.DestroyImmediate(arm.GetComponent<Collider>());
+                arm.GetComponent<Renderer>().material = armMat;
+
+                // Hand (sphere at end of arm)
+                GameObject hand = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                hand.name = $"{armSide}Hand";
+                hand.transform.parent = farmerParent.transform;
+                hand.transform.localPosition = new Vector3(side * 0.7f, 0.95f, 0f);
+                hand.transform.localScale = new Vector3(0.15f, 0.15f, 0.15f);
+                Object.DestroyImmediate(hand.GetComponent<Collider>());
+                hand.GetComponent<Renderer>().material = handMat;
+            }
+
+            // Pitchfork — held by right hand, as a separate animatable object
+            GameObject forkPivot = new GameObject("ForkPivot");
+            forkPivot.transform.parent = farmerParent.transform;
+            forkPivot.transform.localPosition = new Vector3(0.7f, 0.95f, 0f);
+            forkPivot.transform.localRotation = Quaternion.Euler(0, 0, -15f);
+
+            // Handle
             GameObject fork = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             fork.name = "PitchforkHandle";
-            fork.transform.parent = farmerParent.transform;
-            fork.transform.localPosition = new Vector3(0.5f, 1.3f, 0.2f);
+            fork.transform.parent = forkPivot.transform;
+            fork.transform.localPosition = new Vector3(0, 0.7f, 0.1f);
             fork.transform.localScale = new Vector3(0.04f, 0.9f, 0.04f);
-            fork.transform.localRotation = Quaternion.Euler(0, 0, -15f);
             Object.DestroyImmediate(fork.GetComponent<Collider>());
 
-            var forkRenderer = fork.GetComponent<Renderer>();
             Material forkMat = new Material(urpLit);
-            forkMat.color = new Color(0.5f, 0.35f, 0.15f); // wood
-            forkRenderer.material = forkMat;
+            forkMat.color = new Color(0.5f, 0.35f, 0.15f);
+            fork.GetComponent<Renderer>().material = forkMat;
 
             // Pitchfork prongs
             for (int i = -1; i <= 1; i++)
@@ -511,13 +543,13 @@ namespace ReverseRabbitRunner.Editor
                 prong.transform.localScale = new Vector3(0.4f, 0.25f, 0.4f);
                 Object.DestroyImmediate(prong.GetComponent<Collider>());
 
-                var prongRenderer = prong.GetComponent<Renderer>();
                 Material prongMat = new Material(urpLit);
-                prongMat.color = new Color(0.6f, 0.6f, 0.6f); // metal
-                prongRenderer.material = prongMat;
+                prongMat.color = new Color(0.6f, 0.6f, 0.6f);
+                prong.GetComponent<Renderer>().material = prongMat;
             }
 
             farmerParent.AddComponent<Enemies.FarmerController>();
+            farmerParent.AddComponent<Enemies.FarmerForkWave>();
 
             return farmerParent;
         }
@@ -574,7 +606,7 @@ namespace ReverseRabbitRunner.Editor
                 carrot.name = $"Carrot_{i}";
                 carrot.tag = "Carrot";
                 carrot.transform.parent = carrotParent.transform;
-                carrot.transform.position = new Vector3(xPos, 0.3f, zPos);
+                carrot.transform.position = new Vector3(xPos, 0.44f, zPos);
                 carrot.transform.localScale = new Vector3(0.34f, 0.68f, 0.34f);
                 carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);// pointy end up
 
