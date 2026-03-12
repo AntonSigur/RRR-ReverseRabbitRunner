@@ -15,7 +15,7 @@ The goal of the rabbit is to capture as many carrots as it can and gain high sco
 There are special "carrots"
 
 1. Birth-Carrot.
-The rabbit instantly gives birth to baby rabbits, that will run with the rabbit - all lanes of the path - and capture all carrits, but slowly we will loose the baby rabbits as they will run into obstacles or be captured by the angry farmer.
+The rabbit instantly gives birth to baby rabbits, that will run with the rabbit - all lanes of the path - and capture all carrots, but slowly we will loose the baby rabbits as they will run into obstacles or be captured by the angry farmer.
 
 2. Wing-Carrot
 You capture the wing carrot, you will turn the right way and now glide/fly and instantly be able to capture carrots that are lined up in the air

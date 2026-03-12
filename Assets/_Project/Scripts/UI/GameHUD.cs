@@ -152,7 +152,7 @@ namespace ReverseRabbitRunner.UI
                 infoStyle.alignment = TextAnchor.MiddleCenter;
                 infoStyle.fontSize = 24;
                 GUI.Label(new Rect(0, Screen.height * 0.55f, Screen.width, 40),
-                    "Press R to restart", infoStyle);
+                    "Press R to restart | M for menu", infoStyle);
                 infoStyle.alignment = TextAnchor.UpperLeft;
                 infoStyle.fontSize = 18;
 
@@ -161,6 +161,12 @@ namespace ReverseRabbitRunner.UI
                     Core.GameManager.Instance?.RestartGame();
                     UnityEngine.SceneManagement.SceneManager.LoadScene(
                         UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
+                }
+
+                if (Keyboard.current != null && Keyboard.current.mKey.wasPressedThisFrame)
+                {
+                    Time.timeScale = 1f;
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
                 }
             }
 
