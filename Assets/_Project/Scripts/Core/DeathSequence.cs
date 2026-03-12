@@ -72,6 +72,10 @@ namespace ReverseRabbitRunner.Core
             farmerForkPivot = FindDeep(farmer, "RightForkPivot") ?? FindDeep(farmer, "ForkPivot");
             Debug.Log($"[DeathSequence] ForkPivot found: {(farmerForkPivot != null ? farmerForkPivot.name : "NULL")}");
 
+            // Disable farmer's normal chase behavior so it doesn't fight the sequence
+            var farmerCtrl = farmer.GetComponent<Enemies.FarmerController>();
+            if (farmerCtrl != null) farmerCtrl.enabled = false;
+
             // Disable fork wave animation so it doesn't fight the death sequence
             var forkWave = farmer.GetComponent<Enemies.FarmerForkWave>();
             if (forkWave != null) forkWave.enabled = false;
@@ -105,8 +109,15 @@ namespace ReverseRabbitRunner.Core
             float elapsed;
 
             // === STAGE 1: Menacing approach ===
-            Vector3 farmerStart = farmerTransform.position;
-            Vector3 farmerEnd = rabbitTransform.position + (farmerTransform.position - rabbitTransform.position).normalized * 1.2f;
+            // Position farmer at a fixed starting distance, approaching the rabbit
+            Vector3 approachDir = (farmerTransform.position - rabbitTransform.position);
+            approachDir.y = 0;
+            if (approachDir.sqrMagnitude < 0.1f) approachDir = Vector3.forward;
+            approachDir = approachDir.normalized;
+
+            Vector3 farmerStart = rabbitTransform.position + approachDir * 3.5f;
+            Vector3 farmerEnd = rabbitTransform.position + approachDir * 1.0f;
+            farmerTransform.position = farmerStart;
 
             elapsed = 0f;
             while (elapsed < approachDuration)
@@ -127,7 +138,7 @@ namespace ReverseRabbitRunner.Core
             // === STAGE 2: Raise fork ===
             elapsed = 0f;
             Quaternion forkStartRot = farmerForkPivot != null ? farmerForkPivot.localRotation : Quaternion.identity;
-            Quaternion forkRaisedRot = forkStartRot * Quaternion.Euler(-90f, 0, 0); // Fork raised high
+            Quaternion forkRaisedRot = forkStartRot * Quaternion.Euler(-270f, 0, 0); // Fork raised way overhead
 
             while (elapsed < raiseForkDuration)
             {
@@ -145,9 +156,8 @@ namespace ReverseRabbitRunner.Core
 
             // === STAGE 3: STAB! ===
             elapsed = 0f;
-            Quaternion forkStabRot = forkStartRot * Quaternion.Euler(30f, 0, 0); // Fork thrust forward/down
-            Vector3 farmerLungeTarget = rabbitTransform.position + Vector3.up * 0.3f +
-                (farmerTransform.position - rabbitTransform.position).normalized * 0.5f;
+            Quaternion forkStabRot = forkStartRot * Quaternion.Euler(90f, 0, 0); // Fork thrust hard forward/down
+            Vector3 farmerLungeTarget = rabbitTransform.position + approachDir * 0.3f;
 
             while (elapsed < stabDuration)
             {
@@ -159,8 +169,8 @@ namespace ReverseRabbitRunner.Core
                 if (farmerForkPivot != null)
                     farmerForkPivot.localRotation = Quaternion.Slerp(forkRaisedRot, forkStabRot, stabT);
 
-                // Farmer lunges slightly
-                farmerTransform.position = Vector3.Lerp(farmerEnd, farmerLungeTarget, stabT * 0.5f);
+                // Farmer lunges into the rabbit
+                farmerTransform.position = Vector3.Lerp(farmerEnd, farmerLungeTarget, stabT);
                 FaceFarmerToRabbit();
                 UpdateOrbitCamera(sceneCenter);
 
@@ -350,7 +360,7 @@ namespace ReverseRabbitRunner.Core
                 var rb = p.AddComponent<Rigidbody>();
                 rb.mass = 0.1f;
                 rb.useGravity = true;
-                rb.drag = 0.5f;
+                rb.linearDamping = 0.5f;
                 // VelocityChange ignores mass — values are direct m/s
                 Vector3 velocity = new Vector3(
                     Random.Range(-particleSpread, particleSpread),
