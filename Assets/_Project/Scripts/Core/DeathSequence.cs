@@ -250,6 +250,7 @@ namespace ReverseRabbitRunner.Core
 
         private void DisableMirrorCameras()
         {
+            int camDisabled = 0;
             // Disable ALL mirror cameras
             var allCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
             foreach (var cam in allCameras)
@@ -257,7 +258,6 @@ namespace ReverseRabbitRunner.Core
                 if (cam == mainCamera) continue;
                 if (cam.name.Contains("Mirror"))
                 {
-                    // Clear the RenderTexture to black before disabling
                     if (cam.targetTexture != null)
                     {
                         RenderTexture prev = RenderTexture.active;
@@ -266,14 +266,20 @@ namespace ReverseRabbitRunner.Core
                         RenderTexture.active = prev;
                     }
                     cam.enabled = false;
+                    camDisabled++;
                 }
             }
+            Debug.Log($"[DeathSequence] Disabled {camDisabled} mirror cameras");
 
             // Disable the MirrorCamera controller script
             if (rabbitTransform != null)
             {
                 var mirrorController = rabbitTransform.GetComponent<Player.MirrorCamera>();
-                if (mirrorController != null) mirrorController.enabled = false;
+                if (mirrorController != null)
+                {
+                    mirrorController.enabled = false;
+                    Debug.Log("[DeathSequence] MirrorCamera controller disabled");
+                }
             }
 
             // Disable all Glass quad renderers and mirror assembly objects
@@ -281,14 +287,16 @@ namespace ReverseRabbitRunner.Core
                 DisableMirrorVisuals(rabbitTransform);
         }
 
+        private int mirrorVisualsDisabled;
         private void DisableMirrorVisuals(Transform root)
         {
             foreach (Transform child in root)
             {
-                // Disable Glass quads, Mirror assemblies, and mirror cameras
                 if (child.name == "Glass" || child.name.Contains("MirrorAssembly") || child.name.Contains("MirrorCamera"))
                 {
                     child.gameObject.SetActive(false);
+                    mirrorVisualsDisabled++;
+                    Debug.Log($"[DeathSequence] Disabled mirror visual: {child.name}");
                 }
                 DisableMirrorVisuals(child);
             }
@@ -342,17 +350,17 @@ namespace ReverseRabbitRunner.Core
                 var rb = p.AddComponent<Rigidbody>();
                 rb.mass = 0.01f;
                 rb.useGravity = true;
-                float forceMultiplier = 1f / Mathf.Max(slowMotionScale, 0.1f);
+                // Don't compensate for slow-mo — slow-mo blood looks more dramatic
                 Vector3 force = new Vector3(
                     Random.Range(-particleSpread, particleSpread),
                     Random.Range(3f, particleSpread * 2f),
                     Random.Range(-particleSpread, particleSpread)
-                ) * forceMultiplier;
+                );
                 rb.AddForce(force, ForceMode.Impulse);
-                rb.AddTorque(Random.insideUnitSphere * 15f * forceMultiplier, ForceMode.Impulse);
+                rb.AddTorque(Random.insideUnitSphere * 10f, ForceMode.Impulse);
 
                 particles[i] = p;
-                Destroy(p, particleLifetime / Mathf.Max(slowMotionScale, 0.1f));
+                Destroy(p, particleLifetime);
             }
         }
 
