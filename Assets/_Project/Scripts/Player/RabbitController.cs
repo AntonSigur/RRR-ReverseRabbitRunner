@@ -22,9 +22,9 @@ namespace ReverseRabbitRunner.Player
         [SerializeField] private float maxSpeed = 30f;
 
         [Header("Jump Settings")]
-        [SerializeField] private float jumpForce = 12f;
-        [SerializeField] private float jumpSpeedPenalty = 1.5f;
-        [SerializeField] private float jumpSpeedRecoveryRate = 2f;
+        [SerializeField] private float jumpForce = 14f;
+        [SerializeField] private float jumpSpeedPenalty = 1.2f;
+        [SerializeField] private float jumpRecoveryTime = 0.7f;
         [SerializeField] private float airLaneSwitchMultiplier = 0.4f;
         [SerializeField] private float maxBodyTiltAngle = 15f;
         [SerializeField] private float bodyTiltSpeed = 8f;
@@ -65,9 +65,9 @@ namespace ReverseRabbitRunner.Player
             baseSpeed = forwardSpeed;
             UpdateTargetPosition();
 
-            // Find the body child for tilt animation (first child with renderer)
-            if (transform.childCount > 0)
-                bodyTransform = transform.GetChild(0);
+            // Find "Body" child for tilt animation
+            var body = transform.Find("Body");
+            if (body != null) bodyTransform = body;
         }
 
         private void OnEnable()
@@ -109,16 +109,27 @@ namespace ReverseRabbitRunner.Player
         {
             if (!isAlive) return;
 
+            // Gravity first — so grounded state is correct for input
+            if (controller.isGrounded && verticalVelocity < 0f)
+            {
+                verticalVelocity = -2f; // Small downward force to stay grounded
+                if (isJumping) isJumping = false;
+            }
+            else
+            {
+                verticalVelocity += gravity * Time.deltaTime;
+            }
+
             HandleInput();
 
-            // Gradually increase speed (recover toward natural speed)
+            // Gradually increase base speed
             baseSpeed = Mathf.Min(baseSpeed + speedIncreaseRate * Time.deltaTime, maxSpeed);
 
-            // Recover from jump speed debt
+            // Recover from jump speed debt over jumpRecoveryTime
             if (speedDebt > 0f)
             {
-                float recovery = jumpSpeedRecoveryRate * Time.deltaTime;
-                speedDebt = Mathf.Max(speedDebt - recovery, 0f);
+                float recoveryRate = jumpSpeedPenalty / jumpRecoveryTime;
+                speedDebt = Mathf.Max(speedDebt - recoveryRate * Time.deltaTime, 0f);
             }
 
             forwardSpeed = Mathf.Max(baseSpeed - speedDebt, 2f);
@@ -136,18 +147,6 @@ namespace ReverseRabbitRunner.Player
             float currentX = transform.position.x;
             float newX = Mathf.Lerp(currentX, targetXPosition, switchSpeed * Time.deltaTime);
             movement.x = newX - currentX;
-
-            // Gravity & jumping
-            if (controller.isGrounded)
-            {
-                if (isJumping)
-                    isJumping = false;
-                verticalVelocity = -1f;
-            }
-            else
-            {
-                verticalVelocity += gravity * Time.deltaTime;
-            }
 
             movement.y = verticalVelocity * Time.deltaTime;
 
@@ -173,8 +172,16 @@ namespace ReverseRabbitRunner.Player
             lastFrameLeft = isLeft;
             lastFrameRight = isRight;
 
-            // Jump
-            if (jumpAction.WasPressedThisFrame() && controller.isGrounded)
+            // Jump — check with both new and old Input System for reliability
+            bool jumpPressed = jumpAction.WasPressedThisFrame();
+            if (!jumpPressed)
+            {
+                jumpPressed = Input.GetKeyDown(KeyCode.Space)
+                           || Input.GetKeyDown(KeyCode.W)
+                           || Input.GetKeyDown(KeyCode.UpArrow);
+            }
+
+            if (jumpPressed && controller.isGrounded)
                 Jump();
 
             // Touch swipe (using Touchscreen from Input System)
@@ -189,21 +196,25 @@ namespace ReverseRabbitRunner.Player
             verticalVelocity = jumpForce;
             isJumping = true;
             speedDebt += jumpSpeedPenalty;
+            Debug.Log($"[Jump] force={jumpForce} speedDebt={speedDebt:F1}");
         }
 
         private void UpdateBodyTilt()
         {
             if (bodyTransform == null) return;
 
-            // Tilt backward slightly while rising, forward while falling
             float targetTilt = 0f;
-            if (isJumping || !controller.isGrounded)
+            if (!controller.isGrounded)
             {
+                // Tilt backward while rising, slightly forward while falling
                 targetTilt = verticalVelocity > 0 ? -maxBodyTiltAngle : maxBodyTiltAngle * 0.5f;
             }
 
             currentBodyTilt = Mathf.Lerp(currentBodyTilt, targetTilt, bodyTiltSpeed * Time.deltaTime);
-            bodyTransform.localRotation = Quaternion.Euler(currentBodyTilt, 0f, 0f);
+
+            // Preserve existing Y/Z rotation, only modify X tilt
+            Vector3 euler = bodyTransform.localEulerAngles;
+            bodyTransform.localEulerAngles = new Vector3(currentBodyTilt, euler.y, euler.z);
         }
 
         public void MoveLeft()
