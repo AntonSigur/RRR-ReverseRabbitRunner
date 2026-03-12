@@ -66,7 +66,10 @@ namespace ReverseRabbitRunner.Editor
             sun.color = new Color(1f, 0.95f, 0.85f);
             sun.intensity = 1.2f;
             sun.shadows = LightShadows.Soft;
-            sunObj.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
+            sun.shadowStrength = 0.85f;
+            // Light comes from behind the camera / farmer side (+Z), low angle for long shadows.
+            // Shadow projects in -Z (running direction) so it's visible in the mirrors.
+            sunObj.transform.rotation = Quaternion.Euler(20f, 180f, 0f);
         }
 
         private static GameObject CreateGround()
