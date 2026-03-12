@@ -651,21 +651,19 @@ namespace ReverseRabbitRunner.Editor
             osObj.transform.parent = managers.transform;
             osObj.AddComponent<World.ObstacleSpawner>();
 
-            // HUD
+            // HUD (also handles pause menu via OnGUI)
             GameObject hudObj = new GameObject("GameHUD");
             hudObj.transform.parent = managers.transform;
             hudObj.AddComponent<UI.GameHUD>();
 
-            // Pause Menu (Esc to toggle)
-            GameObject pauseObj = new GameObject("PauseMenu");
-            pauseObj.transform.parent = managers.transform;
-            pauseObj.AddComponent<UI.PauseMenuUI>();
-
-            // Event System for Canvas UI
-            GameObject eventSys = new GameObject("EventSystem");
-            eventSys.transform.parent = managers.transform;
-            eventSys.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSys.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            // Event System for UI (check if one exists first)
+            if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                GameObject eventSys = new GameObject("EventSystem");
+                eventSys.transform.parent = managers.transform;
+                eventSys.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                eventSys.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            }
 
             // Auto-start helper
             GameObject autoStart = new GameObject("AutoStart");

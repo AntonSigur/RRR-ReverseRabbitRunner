@@ -5,7 +5,7 @@ namespace ReverseRabbitRunner.UI
 {
     /// <summary>
     /// Simple in-game HUD showing score, speed, and farmer distance.
-    /// Uses OnGUI for quick prototyping — will be replaced with proper UI Canvas later.
+    /// Also handles pause menu (Esc/Q) using OnGUI.
     /// </summary>
     public class GameHUD : MonoBehaviour
     {
@@ -17,7 +17,10 @@ namespace ReverseRabbitRunner.UI
         private GUIStyle warningStyle;
         private GUIStyle infoStyle;
         private GUIStyle gameOverStyle;
+        private GUIStyle buttonStyle;
         private bool stylesInitialized = false;
+        private bool isPaused = false;
+        private bool showSettings = false;
 
         private void Start()
         {
@@ -67,6 +70,33 @@ namespace ReverseRabbitRunner.UI
             gameOverStyle.normal.textColor = Color.red;
 
             stylesInitialized = true;
+        }
+
+        private void Update()
+        {
+            // Pause toggle — Esc or Q
+            bool pauseKey = false;
+            if (Keyboard.current != null)
+                pauseKey = Keyboard.current.escapeKey.wasPressedThisFrame
+                        || Keyboard.current.qKey.wasPressedThisFrame;
+            if (!pauseKey)
+                pauseKey = Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Q);
+
+            if (pauseKey)
+            {
+                var gm = Core.GameManager.Instance;
+                if (gm != null && gm.CurrentState == Core.GameManager.GameState.GameOver)
+                    return;
+
+                if (showSettings)
+                {
+                    showSettings = false;
+                    return;
+                }
+
+                isPaused = !isPaused;
+                Time.timeScale = isPaused ? 0f : 1f;
+            }
         }
 
         private void OnGUI()
@@ -132,6 +162,97 @@ namespace ReverseRabbitRunner.UI
                     $"Chunk: #{chunkMgr.CurrentChunkIndex}  (active: {chunkMgr.ActiveChunkCount})", infoStyle);
                 GUI.Label(new Rect(padding, y + 44, 400, 25),
                     $"Origin shifts: {chunkMgr.OriginShiftCount}", infoStyle);
+            }
+
+            // Pause overlay
+            if (isPaused)
+            {
+                GUI.color = new Color(0, 0, 0, 0.75f);
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+
+                if (!showSettings)
+                {
+                    gameOverStyle.normal.textColor = Color.white;
+                    GUI.Label(new Rect(0, Screen.height * 0.2f, Screen.width, 60), "PAUSED", gameOverStyle);
+                    gameOverStyle.normal.textColor = Color.red;
+
+                    if (buttonStyle == null)
+                    {
+                        buttonStyle = new GUIStyle(GUI.skin.button)
+                        {
+                            fontSize = 28,
+                            fontStyle = FontStyle.Bold,
+                            alignment = TextAnchor.MiddleCenter
+                        };
+                        buttonStyle.normal.textColor = Color.white;
+                    }
+
+                    float btnW = 300, btnH = 50;
+                    float btnX = (Screen.width - btnW) / 2f;
+
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.38f, btnW, btnH), "▶  RESUME", buttonStyle))
+                    {
+                        isPaused = false;
+                        Time.timeScale = 1f;
+                    }
+
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.48f, btnW, btnH), "⚙  SETTINGS", buttonStyle))
+                    {
+                        showSettings = true;
+                    }
+
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.58f, btnW, btnH), "✕  QUIT TO MENU", buttonStyle))
+                    {
+                        isPaused = false;
+                        Time.timeScale = 1f;
+                        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+                    }
+
+                    infoStyle.alignment = TextAnchor.MiddleCenter;
+                    GUI.Label(new Rect(0, Screen.height * 0.72f, Screen.width, 30),
+                        "Esc or Q to resume", infoStyle);
+                    infoStyle.alignment = TextAnchor.UpperLeft;
+                }
+                else
+                {
+                    // Settings sub-panel
+                    gameOverStyle.normal.textColor = Color.white;
+                    GUI.Label(new Rect(0, Screen.height * 0.2f, Screen.width, 60), "SETTINGS", gameOverStyle);
+                    gameOverStyle.normal.textColor = Color.red;
+
+                    float cx = Screen.width / 2f;
+
+                    infoStyle.alignment = TextAnchor.MiddleCenter;
+                    infoStyle.fontSize = 22;
+                    GUI.Label(new Rect(0, Screen.height * 0.35f, Screen.width, 30), "CONTROLS", infoStyle);
+                    infoStyle.fontSize = 18;
+                    GUI.Label(new Rect(0, Screen.height * 0.40f, Screen.width, 60),
+                        "PC: A/D or ←/→ = switch lanes | Numpad = mirrors | Esc/Q = pause", infoStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.46f, Screen.width, 30),
+                        "Mobile: Swipe left/right to switch lanes", infoStyle);
+
+                    GUI.Label(new Rect(0, Screen.height * 0.55f, Screen.width, 30), "Master Volume", infoStyle);
+                    float vol = GUI.HorizontalSlider(
+                        new Rect(cx - 150, Screen.height * 0.60f, 300, 20),
+                        AudioListener.volume, 0f, 1f);
+                    AudioListener.volume = vol;
+                    PlayerPrefs.SetFloat("MasterVolume", vol);
+
+                    if (buttonStyle == null)
+                    {
+                        buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 24, fontStyle = FontStyle.Bold };
+                        buttonStyle.normal.textColor = Color.white;
+                    }
+                    float btnW = 200, btnH = 45;
+                    if (GUI.Button(new Rect(cx - btnW / 2, Screen.height * 0.70f, btnW, btnH), "← BACK", buttonStyle))
+                    {
+                        showSettings = false;
+                    }
+                    infoStyle.alignment = TextAnchor.UpperLeft;
+                }
+
+                return; // Don't draw game over or controls hint while paused
             }
 
             // Game Over overlay
