@@ -122,12 +122,18 @@ namespace ReverseRabbitRunner.Editor
             playerParent.tag = "Player";
             playerParent.transform.position = new Vector3(0, 1f, 0);
 
+            // Body container — tilts during jumps; visual parts go here
+            GameObject bodyContainer = new GameObject("Body");
+            bodyContainer.transform.parent = playerParent.transform;
+            bodyContainer.transform.localPosition = Vector3.zero;
+            bodyContainer.transform.localRotation = Quaternion.identity;
+
             Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
 
             // Rabbit body — round and cute
             GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             body.name = "RabbitBody";
-            body.transform.parent = playerParent.transform;
+            body.transform.parent = bodyContainer.transform;
             body.transform.localPosition = new Vector3(0, 0f, 0);
             body.transform.localScale = new Vector3(0.6f, 0.5f, 0.55f);
             Object.DestroyImmediate(body.GetComponent<Collider>());
@@ -141,7 +147,7 @@ namespace ReverseRabbitRunner.Editor
             // Head (slightly larger sphere)
             GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             head.name = "RabbitHead";
-            head.transform.parent = playerParent.transform;
+            head.transform.parent = bodyContainer.transform;
             head.transform.localPosition = new Vector3(0, 0.55f, 0);
             head.transform.localScale = new Vector3(0.5f, 0.45f, 0.45f);
             Object.DestroyImmediate(head.GetComponent<Collider>());
@@ -206,7 +212,7 @@ namespace ReverseRabbitRunner.Editor
             // Fluffy tail
             GameObject tail = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             tail.name = "RabbitTail";
-            tail.transform.parent = playerParent.transform;
+            tail.transform.parent = bodyContainer.transform;
             tail.transform.localPosition = new Vector3(0, 0f, 0.4f);
             tail.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
             Object.DestroyImmediate(tail.GetComponent<Collider>());
@@ -218,7 +224,7 @@ namespace ReverseRabbitRunner.Editor
                 // Ear — tall, slightly tilted outward
                 GameObject ear = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 ear.name = side < 0 ? "LeftEar" : "RightEar";
-                ear.transform.parent = playerParent.transform;
+                ear.transform.parent = bodyContainer.transform;
                 ear.transform.localPosition = new Vector3(side * 0.18f, 0.95f, 0);
                 ear.transform.localScale = new Vector3(0.12f, 0.55f, 0.08f);
                 ear.transform.localRotation = Quaternion.Euler(0, 0, side * -12f);
@@ -253,7 +259,7 @@ namespace ReverseRabbitRunner.Editor
                 // Rabbit arm (cylinder from body outward)
                 GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 arm.name = $"{side}Arm";
-                arm.transform.parent = playerParent.transform;
+                arm.transform.parent = bodyContainer.transform;
                 arm.transform.localPosition = new Vector3(mirrorSide * 0.55f, 0.5f, 0f);
                 arm.transform.localScale = new Vector3(0.08f, 1.0f, 0.08f);
                 arm.transform.localRotation = Quaternion.Euler(0, 0, mirrorSide * -70f);
@@ -265,7 +271,7 @@ namespace ReverseRabbitRunner.Editor
                 // Paw/hand (small sphere at end of arm)
                 GameObject paw = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 paw.name = $"{side}Paw";
-                paw.transform.parent = playerParent.transform;
+                paw.transform.parent = bodyContainer.transform;
                 paw.transform.localPosition = new Vector3(mirrorSide * 2.0f, 0.8f, 0f);
                 paw.transform.localScale = new Vector3(0.2f, 0.2f, 0.2f);
                 Object.DestroyImmediate(paw.GetComponent<Collider>());
@@ -276,7 +282,7 @@ namespace ReverseRabbitRunner.Editor
                 // Mirror glass only (no frame box) — pushed further from rabbit
                 // Assembly positioned beyond the paw so glass doesn't clip
                 GameObject mirrorAssembly = new GameObject($"{side}MirrorAssembly");
-                mirrorAssembly.transform.parent = playerParent.transform;
+                mirrorAssembly.transform.parent = bodyContainer.transform;
                 mirrorAssembly.transform.localPosition = new Vector3(mirrorSide * 2.5f, 0.9f, 0f);
                 mirrorAssembly.transform.localRotation = Quaternion.Euler(5f, mirrorSide * 15f, 0);
 
@@ -302,7 +308,7 @@ namespace ReverseRabbitRunner.Editor
                 // Mirror camera — at rabbit's head, looking forward (running direction)
                 // playerParent local +Z = world -Z (running direction)
                 GameObject camObj = new GameObject($"{side}MirrorCamera");
-                camObj.transform.parent = playerParent.transform;
+                camObj.transform.parent = bodyContainer.transform;
                 camObj.transform.localPosition = new Vector3(mirrorSide * 0.3f, 1.0f, 0.8f);
                 camObj.transform.localRotation = Quaternion.Euler(8f, mirrorSide * 5f, 0f);
 

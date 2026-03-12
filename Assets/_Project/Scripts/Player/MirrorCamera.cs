@@ -55,24 +55,29 @@ namespace ReverseRabbitRunner.Player
 
         private void FindMirrorComponents()
         {
-            // Auto-find mirror cameras and assemblies in children of our parent (the player)
+            // Search all descendants (cameras/assemblies may be under Body container)
             Transform player = transform;
-            foreach (Transform child in player)
-            {
-                if (child.name == "LeftMirrorCamera")
-                    leftCam = child.GetComponent<Camera>();
-                else if (child.name == "RightMirrorCamera")
-                    rightCam = child.GetComponent<Camera>();
-                else if (child.name == "LeftMirrorAssembly")
-                    leftAssembly = child;
-                else if (child.name == "RightMirrorAssembly")
-                    rightAssembly = child;
-            }
+
+            leftCam = FindDeep(player, "LeftMirrorCamera")?.GetComponent<Camera>();
+            rightCam = FindDeep(player, "RightMirrorCamera")?.GetComponent<Camera>();
+            leftAssembly = FindDeep(player, "LeftMirrorAssembly");
+            rightAssembly = FindDeep(player, "RightMirrorAssembly");
 
             if (leftAssembly != null) leftBaseRotation = leftAssembly.localRotation;
             if (rightAssembly != null) rightBaseRotation = rightAssembly.localRotation;
 
             ApplyFOV();
+        }
+
+        private static Transform FindDeep(Transform parent, string name)
+        {
+            foreach (Transform child in parent)
+            {
+                if (child.name == name) return child;
+                var found = FindDeep(child, name);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private void Update()
