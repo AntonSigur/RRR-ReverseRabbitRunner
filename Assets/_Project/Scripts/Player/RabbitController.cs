@@ -360,6 +360,16 @@ namespace ReverseRabbitRunner.Player
                 }
 
                 other.enabled = false;
+
+                // Push rabbit in front of the obstacle (rabbit runs in -Z, so push to +Z edge)
+                float obstacleEdgeZ = other.bounds.max.z + controller.radius + 0.1f;
+                Vector3 pos = transform.position;
+                if (pos.z < obstacleEdgeZ)
+                {
+                    pos.z = obstacleEdgeZ;
+                    transform.position = pos;
+                }
+
                 float penalty = isSmall ? stumbleSpeedPenaltySmall : stumbleSpeedPenaltyTall;
                 Stumble(penalty);
             }
