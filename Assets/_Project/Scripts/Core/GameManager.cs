@@ -26,6 +26,7 @@ namespace ReverseRabbitRunner.Core
                 return;
             }
             Instance = this;
+            transform.SetParent(null); // Must be root for DontDestroyOnLoad
             DontDestroyOnLoad(gameObject);
         }
 

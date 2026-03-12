@@ -30,6 +30,7 @@ namespace ReverseRabbitRunner.Core
                 return;
             }
             Instance = this;
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
 
             highScore = PlayerPrefs.GetInt(HighScoreKey, 0);

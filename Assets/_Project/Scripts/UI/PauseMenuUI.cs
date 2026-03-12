@@ -21,8 +21,16 @@ namespace ReverseRabbitRunner.UI
 
         private void Start()
         {
-            BuildUI();
-            Debug.Log("[PauseMenuUI] Ready — press Esc or Q to pause");
+            Debug.Log("[PauseMenuUI] Initializing...");
+            try
+            {
+                BuildUI();
+                Debug.Log("[PauseMenuUI] Ready — press Esc or Q to pause");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[PauseMenuUI] BuildUI failed: {e.Message}\n{e.StackTrace}");
+            }
         }
 
         private void Update()
@@ -184,6 +192,15 @@ namespace ReverseRabbitRunner.UI
 
         // --- UI Helpers (same pattern as MainMenuUI) ---
 
+        private static Font GetFont()
+        {
+            // Unity 6 uses LegacyRuntime.ttf, older versions use Arial.ttf
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Font.CreateDynamicFontFromOSFont("Arial", 14);
+            return font;
+        }
+
         private static Text CreateText(Transform parent, string name, string content,
             Vector2 pos, int fontSize, Color color, FontStyle style = FontStyle.Normal)
         {
@@ -198,7 +215,7 @@ namespace ReverseRabbitRunner.UI
 
             Text text = obj.AddComponent<Text>();
             text.text = content;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = GetFont();
             text.fontSize = fontSize;
             text.fontStyle = style;
             text.color = color;
@@ -239,7 +256,7 @@ namespace ReverseRabbitRunner.UI
 
             Text text = labelObj.AddComponent<Text>();
             text.text = label;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = GetFont();
             text.fontSize = fontSize;
             text.fontStyle = FontStyle.Bold;
             text.color = textColor;
