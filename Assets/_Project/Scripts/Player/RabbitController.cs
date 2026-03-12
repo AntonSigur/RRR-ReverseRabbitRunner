@@ -359,10 +359,12 @@ namespace ReverseRabbitRunner.Player
                     return;
                 }
 
+                // Read obstacle bounds BEFORE disabling the collider
+                Bounds obstacleBounds = other.bounds;
                 other.enabled = false;
 
                 // Push rabbit in front of the obstacle (rabbit runs in -Z, so push to +Z edge)
-                float obstacleEdgeZ = other.bounds.max.z + controller.radius + 0.1f;
+                float obstacleEdgeZ = obstacleBounds.max.z + controller.radius + 0.15f;
                 Vector3 pos = transform.position;
                 if (pos.z < obstacleEdgeZ)
                 {
