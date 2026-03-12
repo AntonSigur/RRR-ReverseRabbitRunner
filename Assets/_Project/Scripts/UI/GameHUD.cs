@@ -118,6 +118,7 @@ namespace ReverseRabbitRunner.UI
                 GUI.Label(new Rect(padding, padding + 45, 300, 30), speedText, infoStyle);
 
                 string laneText = $"Lane: {rabbit.CurrentLane + 1}/5";
+                if (rabbit.IsJumping) laneText += "  🐇 JUMP!";
                 GUI.Label(new Rect(padding, padding + 70, 300, 30), laneText, infoStyle);
             }
 
@@ -227,7 +228,7 @@ namespace ReverseRabbitRunner.UI
                     GUI.Label(new Rect(0, Screen.height * 0.35f, Screen.width, 30), "CONTROLS", infoStyle);
                     infoStyle.fontSize = 18;
                     GUI.Label(new Rect(0, Screen.height * 0.40f, Screen.width, 60),
-                        "PC: A/D or ←/→ = switch lanes | Numpad = mirrors | Esc/Q = pause", infoStyle);
+                        "PC: A/D or ←/→ = switch lanes | Space/W/↑ = jump | Numpad = mirrors | Esc/Q = pause", infoStyle);
                     GUI.Label(new Rect(0, Screen.height * 0.46f, Screen.width, 30),
                         "Mobile: Swipe left/right to switch lanes", infoStyle);
 
@@ -293,7 +294,7 @@ namespace ReverseRabbitRunner.UI
             // Controls hint (bottom)
             infoStyle.alignment = TextAnchor.LowerCenter;
             GUI.Label(new Rect(0, Screen.height - 50, Screen.width, 40),
-                "A/D or ←/→ to switch lanes", infoStyle);
+                "A/D or ←/→ to switch lanes | Space/W/↑ to jump", infoStyle);
             infoStyle.alignment = TextAnchor.UpperLeft;
         }
     }
