@@ -7,7 +7,7 @@ namespace ReverseRabbitRunner.Player
     /// Manages the mirror-view cameras on the rabbit's ears.
     /// Renders to RenderTextures displayed as UI elements (side mirrors).
     /// Runtime keyboard controls for adjusting mirrors like car mirrors:
-    ///   Numpad 4/6: rotate left mirror left/right  |  Numpad 7/9: rotate right mirror left/right
+    ///   Numpad 4/6: spread both mirrors outward/inward (symmetric yaw)
     ///   Numpad 2/8: tilt both mirrors down/up
     ///   Numpad +/-: zoom in/out (FOV)
     ///   Numpad 5: reset mirrors to default
@@ -94,16 +94,16 @@ namespace ReverseRabbitRunner.Player
 
             float dt = Time.deltaTime;
 
-            // Both mirrors yaw: Numpad 4/6
+            // Both mirrors yaw symmetrically: Numpad 4 = outward, Numpad 6 = inward
             if (kb.numpad4Key.isPressed)
             {
                 leftYawOffset = Mathf.Clamp(leftYawOffset - adjustSpeed * dt, -maxYawOffset, maxYawOffset);
-                rightYawOffset = Mathf.Clamp(rightYawOffset - adjustSpeed * dt, -maxYawOffset, maxYawOffset);
+                rightYawOffset = Mathf.Clamp(rightYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
             }
             if (kb.numpad6Key.isPressed)
             {
                 leftYawOffset = Mathf.Clamp(leftYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
-                rightYawOffset = Mathf.Clamp(rightYawOffset + adjustSpeed * dt, -maxYawOffset, maxYawOffset);
+                rightYawOffset = Mathf.Clamp(rightYawOffset - adjustSpeed * dt, -maxYawOffset, maxYawOffset);
             }
 
             // Individual mirror yaw: Numpad 7/9 (left only), 1/3 (right only)
