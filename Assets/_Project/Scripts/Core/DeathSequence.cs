@@ -245,12 +245,35 @@ namespace ReverseRabbitRunner.Core
 
         private void DisableMirrorCameras()
         {
-            // Disable all mirror cameras so mirrors go black
-            var mirrorCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
-            foreach (var cam in mirrorCameras)
+            // Disable ALL mirror cameras (Camera components with "Mirror" in name)
+            var allCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
+            foreach (var cam in allCameras)
             {
                 if (cam.name.Contains("Mirror"))
+                {
                     cam.enabled = false;
+                    cam.gameObject.SetActive(false);
+                }
+            }
+
+            // Disable the MirrorCamera controller script so it stops adjusting
+            var mirrorController = rabbitTransform.GetComponent<Player.MirrorCamera>();
+            if (mirrorController != null) mirrorController.enabled = false;
+
+            // Hide mirror quads (the visible glass surfaces)
+            HideChildRenderers(rabbitTransform, "Mirror");
+        }
+
+        private void HideChildRenderers(Transform root, string nameContains)
+        {
+            foreach (Transform child in root)
+            {
+                if (child.name.Contains(nameContains))
+                {
+                    var renderer = child.GetComponent<Renderer>();
+                    if (renderer != null) renderer.enabled = false;
+                }
+                HideChildRenderers(child, nameContains);
             }
         }
 
@@ -260,58 +283,60 @@ namespace ReverseRabbitRunner.Core
             particles = new GameObject[particleBurstCount];
 
             Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
+            if (urpLit == null) urpLit = Shader.Find("Universal Render Pipeline/Unlit");
 
             for (int i = 0; i < particleBurstCount; i++)
             {
                 GameObject p;
                 if (useBlood)
                 {
-                    // Blood drop: small red elongated sphere
+                    // Blood drop: visible red elongated sphere
                     p = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     p.name = "BloodDrop";
-                    float scale = Random.Range(0.03f, 0.1f);
-                    p.transform.localScale = new Vector3(scale, scale * 1.5f, scale);
+                    float scale = Random.Range(0.06f, 0.2f);
+                    p.transform.localScale = new Vector3(scale, scale * 2f, scale);
                     var mat = new Material(urpLit);
                     mat.color = new Color(
-                        Random.Range(0.6f, 0.9f),
-                        Random.Range(0.0f, 0.1f),
+                        Random.Range(0.7f, 1.0f),
+                        Random.Range(0.0f, 0.08f),
                         Random.Range(0.0f, 0.05f)
                     );
+                    mat.SetFloat("_Smoothness", 0.9f);
                     p.GetComponent<Renderer>().material = mat;
                 }
                 else
                 {
-                    // Carrot piece: small orange cylinder
+                    // Carrot piece: orange/green cylinders
                     p = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                     p.name = "CarrotPiece";
-                    float scale = Random.Range(0.04f, 0.12f);
-                    p.transform.localScale = new Vector3(scale, scale * 2f, scale);
+                    float scale = Random.Range(0.06f, 0.18f);
+                    p.transform.localScale = new Vector3(scale, scale * 2.5f, scale);
                     var mat = new Material(urpLit);
-                    mat.color = new Color(
-                        Random.Range(0.85f, 1f),
-                        Random.Range(0.3f, 0.55f),
-                        Random.Range(0.0f, 0.1f)
-                    );
+                    bool isGreen = Random.value > 0.7f; // 30% green tops
+                    mat.color = isGreen
+                        ? new Color(0.2f, Random.Range(0.5f, 0.8f), 0.1f)
+                        : new Color(Random.Range(0.85f, 1f), Random.Range(0.3f, 0.55f), Random.Range(0.0f, 0.1f));
                     p.GetComponent<Renderer>().material = mat;
                 }
 
                 Object.DestroyImmediate(p.GetComponent<Collider>());
-                p.transform.position = origin;
+                p.transform.position = origin + Random.insideUnitSphere * 0.15f;
 
-                // Add physics for flying particles
+                // Physics: compensate for slow-motion by using stronger forces
                 var rb = p.AddComponent<Rigidbody>();
                 rb.mass = 0.01f;
                 rb.useGravity = true;
+                float forceMultiplier = 1f / Mathf.Max(slowMotionScale, 0.1f);
                 Vector3 force = new Vector3(
                     Random.Range(-particleSpread, particleSpread),
-                    Random.Range(2f, particleSpread * 1.5f),
+                    Random.Range(3f, particleSpread * 2f),
                     Random.Range(-particleSpread, particleSpread)
-                );
+                ) * forceMultiplier;
                 rb.AddForce(force, ForceMode.Impulse);
-                rb.AddTorque(Random.insideUnitSphere * 10f, ForceMode.Impulse);
+                rb.AddTorque(Random.insideUnitSphere * 15f * forceMultiplier, ForceMode.Impulse);
 
                 particles[i] = p;
-                Destroy(p, particleLifetime);
+                Destroy(p, particleLifetime / Mathf.Max(slowMotionScale, 0.1f));
             }
         }
 
