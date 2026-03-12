@@ -48,17 +48,22 @@ namespace ReverseRabbitRunner.Editor
         private static void AddSceneToBuildSettings(string scenePath)
         {
             var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
-            bool found = false;
-            foreach (var s in scenes)
+
+            // Remove existing entry if present
+            scenes.RemoveAll(s => s.path == scenePath);
+
+            if (scenePath.Contains("MainMenu"))
             {
-                if (s.path == scenePath) { found = true; break; }
+                // MainMenu must be index 0 (startup scene)
+                scenes.Insert(0, new EditorBuildSettingsScene(scenePath, true));
             }
-            if (!found)
+            else
             {
                 scenes.Add(new EditorBuildSettingsScene(scenePath, true));
-                EditorBuildSettings.scenes = scenes.ToArray();
-                Debug.Log($"Added '{scenePath}' to Build Settings");
             }
+
+            EditorBuildSettings.scenes = scenes.ToArray();
+            Debug.Log($"Build Settings: '{scenePath}' (index {(scenePath.Contains("MainMenu") ? 0 : scenes.Count - 1)})");
         }
     }
 }

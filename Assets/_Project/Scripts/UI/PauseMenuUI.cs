@@ -22,11 +22,28 @@ namespace ReverseRabbitRunner.UI
         private void Start()
         {
             BuildUI();
+            Debug.Log("[PauseMenuUI] Ready — press Esc or Q to pause");
         }
 
         private void Update()
         {
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            // Check for pause key — support both new and old Input System
+            bool pausePressed = false;
+
+            // New Input System
+            if (Keyboard.current != null)
+            {
+                pausePressed = Keyboard.current.escapeKey.wasPressedThisFrame
+                            || Keyboard.current.qKey.wasPressedThisFrame;
+            }
+
+            // Old Input System fallback
+            if (!pausePressed)
+            {
+                pausePressed = Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Q);
+            }
+
+            if (pausePressed)
             {
                 if (settingsPanel != null && settingsPanel.activeSelf)
                     OnSettingsBack();
