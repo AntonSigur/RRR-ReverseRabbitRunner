@@ -691,6 +691,11 @@ namespace ReverseRabbitRunner.Editor
             autoStart.transform.parent = managers.transform;
             autoStart.AddComponent<Core.AutoStartGame>();
 
+            // Death sequence controller
+            GameObject deathSeqObj = new GameObject("DeathSequence");
+            deathSeqObj.transform.parent = managers.transform;
+            deathSeqObj.AddComponent<Core.DeathSequence>();
+
             return managers;
         }
 

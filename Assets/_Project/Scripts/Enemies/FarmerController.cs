@@ -22,7 +22,7 @@ namespace ReverseRabbitRunner.Enemies
         [SerializeField] private float tallObstaclePenaltyDistance = 4f;
         [SerializeField] private float farmerRecoveryTime = 10f;
 
-        [Header("Catch Animation")]
+        [Header("Death Sequence")]
         [SerializeField] private float catchPauseDuration = 1.0f;
 
         [Header("Lateral Following")]
@@ -40,6 +40,7 @@ namespace ReverseRabbitRunner.Enemies
         private bool isCatching;
         private float catchTimer;
         private Player.RabbitController rabbitController;
+        private Core.DeathSequence deathSequence;
 
         public float CurrentDistance => currentDistance;
         public float NormalizedThreat => 1f - Mathf.Clamp01(currentDistance / baseDistance);
@@ -75,6 +76,9 @@ namespace ReverseRabbitRunner.Enemies
             // Catch animation: farmer pauses then kills
             if (isCatching)
             {
+                // Once death sequence is running, let it control farmer position
+                if (deathSequence != null && deathSequence.IsPlaying) return;
+
                 catchTimer -= Time.deltaTime;
                 Vector3 catchPos = new Vector3(
                     playerTransform.position.x,
@@ -89,7 +93,15 @@ namespace ReverseRabbitRunner.Enemies
                 if (catchTimer <= 0f)
                 {
                     OnCaughtRabbit?.Invoke();
-                    rabbitController?.Die();
+                    // Launch cinematic death sequence
+                    deathSequence = FindAnyObjectByType<Core.DeathSequence>();
+                    if (deathSequence == null)
+                    {
+                        // Create one on-the-fly if not in scene
+                        var go = new GameObject("[DeathSequence]");
+                        deathSequence = go.AddComponent<Core.DeathSequence>();
+                    }
+                    deathSequence.Play(transform, rabbitController.transform);
                 }
                 return;
             }

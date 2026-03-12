@@ -113,9 +113,16 @@ namespace ReverseRabbitRunner.UI
         {
             if (!stylesInitialized) InitStyles();
 
+            // Hide HUD during death cinematic (except game over overlay after it ends)
+            var deathSeqCheck = FindAnyObjectByType<Core.DeathSequence>();
+            bool deathPlaying = deathSeqCheck != null && deathSeqCheck.IsPlaying;
+
             float padding = 20f;
             var score = Core.ScoreManager.Instance;
             var game = Core.GameManager.Instance;
+
+            // Skip HUD drawing during death sequence (cinematic plays full-screen)
+            if (deathPlaying) return;
 
             // Score (top-left)
             string scoreText = $"🥕 {(score != null ? score.CurrentScore : 0)}";
@@ -276,6 +283,17 @@ namespace ReverseRabbitRunner.UI
                     AudioListener.volume = vol;
                     PlayerPrefs.SetFloat("MasterVolume", vol);
 
+                    // Death particle mode toggle
+                    infoStyle.fontSize = 22;
+                    GUI.Label(new Rect(0, Screen.height * 0.64f, Screen.width, 30), "Death Effect", infoStyle);
+                    infoStyle.fontSize = 18;
+                    bool useBlood = Core.DeathSequence.UseBloodParticles;
+                    string modeLabel = useBlood ? "🩸 Blood (click to change)" : "🥕 Carrots (click to change)";
+                    if (GUI.Button(new Rect(cx - 150, Screen.height * 0.685f, 300, 35), modeLabel, buttonStyle))
+                    {
+                        Core.DeathSequence.UseBloodParticles = !useBlood;
+                    }
+
                     if (buttonStyle == null)
                     {
                         buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 24, fontStyle = FontStyle.Bold };
@@ -292,8 +310,10 @@ namespace ReverseRabbitRunner.UI
                 return; // Don't draw game over or controls hint while paused
             }
 
-            // Game Over overlay
-            if (game != null && game.CurrentState == Core.GameManager.GameState.GameOver)
+            // Game Over overlay — but NOT while death sequence is playing
+            var deathSeq = FindAnyObjectByType<Core.DeathSequence>();
+            if (game != null && game.CurrentState == Core.GameManager.GameState.GameOver
+                && (deathSeq == null || !deathSeq.IsPlaying))
             {
                 // Dark overlay
                 GUI.color = new Color(0, 0, 0, 0.6f);

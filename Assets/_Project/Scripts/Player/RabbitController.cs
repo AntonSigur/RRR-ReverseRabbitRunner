@@ -267,7 +267,28 @@ namespace ReverseRabbitRunner.Player
 
         public void Die()
         {
+            if (!isAlive) return;
             isAlive = false;
+
+            // Death sequence controller handles the cinematic + GameOver call.
+            // If no death sequence is active (e.g. stumble-death), start one.
+            var deathSeq = Object.FindAnyObjectByType<Core.DeathSequence>();
+            if (deathSeq != null && !deathSeq.IsPlaying)
+            {
+                var farmer = GameObject.FindGameObjectWithTag("Farmer");
+                if (farmer != null)
+                {
+                    deathSeq.Play(farmer.transform, transform);
+                    return;
+                }
+            }
+            else if (deathSeq != null && deathSeq.IsPlaying)
+            {
+                // Sequence already running (farmer-initiated)
+                return;
+            }
+
+            // Fallback if no death sequence found
             Core.GameManager.Instance?.GameOver();
         }
 
