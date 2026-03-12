@@ -2,7 +2,7 @@
 
 > *Run backwards. Trust your mirrors. Steal ALL the carrots.*
 
-**Reverse Rabbit Runner** is an endless runner with a twist — your rabbit runs **backwards** through a carrot farm, using tiny ear-mounted mirrors (yes, like car side mirrors) to see where it's going. Meanwhile, an extremely angry farmer is chasing you down because, well, you're stealing his carrots.
+**Reverse Rabbit Runner** is an endless runner with a twist — your rabbit runs **backwards** through a carrot farm, holding tiny mirrors in its paws (yes, like car side mirrors) to see where it's going. Meanwhile, an extremely angry farmer is chasing you down because, well, you're stealing his carrots.
 
 It's as chaotic as it sounds. 🐇💨
 
@@ -10,14 +10,14 @@ It's as chaotic as it sounds. 🐇💨
 
 ## 🎮 The Game
 
-Think **Subway Surfers** meets **backwards driving with mirrors only**.
+Think of your favourite **endless runner game** — now imagine running the wrong way with only mirrors to guide you.
 
 You're a rabbit. You run backwards through an endless carrot farm. You have two mirrors strapped to your long ears — that's your only view of what's behind you (which is actually ahead of you, because you're running backwards... keep up).
 
 ### Core Mechanics
 
 - **🔄 Backwards Running** — The rabbit always faces the farmer. Your path ahead? That's behind you. Check your mirrors.
-- **🪞 Ear Mirrors** — Side-mirror cameras on the rabbit's ears give you a limited rear view. Adjust them with the numpad if things get hairy.
+- **🪞 Paw Mirrors** — The rabbit holds side-mirror cameras in its paws, giving you a limited rear view. Adjust them with the numpad if things get hairy.
 - **🥕 Carrot Collecting** — Dodge between 5 lanes to scoop up carrots for your high score.
 - **👨‍🌾 Angry Farmer** — He's right there. In your face. Getting closer every time you hit something. If he catches you... it's not pretty.
 - **🚧 Obstacles** — Farm equipment, fences, rocks — the usual stuff you'd find on a carrot farm that wants to kill you.
@@ -57,7 +57,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 
 ### What Works ✅
 
-- 🐇 Backwards-running rabbit with primitive body, face, ears, and arms holding mirrors
+- 🐇 Backwards-running rabbit with primitive body, face, ears, and arms holding mirrors in its paws
 - 🪞 Working mirror cameras (RenderTexture-based, adjustable with numpad)
 - 👨‍🌾 Angry farmer with hat, pitchfork, scowling face, and AI pursuit
 - 🥕 Carrot collecting with score tracking and bobbing animation
