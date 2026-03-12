@@ -55,6 +55,11 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 
 > ⚠️ **This is an early prototype.** Characters are made of Unity primitives (cubes, spheres, cylinders). Art is placeholder. Gameplay is functional but rough.
 
+<p align="center">
+  <img src="Screenshots/Screenshot-Early-prototype.jpg" alt="Early Prototype Screenshot" width="720" />
+  <br><em>Early prototype — primitive art, but the rabbit runs and the farmer rages.</em>
+</p>
+
 ### What Works ✅
 
 - 🐇 Backwards-running rabbit with primitive body, face, ears, and arms holding mirrors in its paws
