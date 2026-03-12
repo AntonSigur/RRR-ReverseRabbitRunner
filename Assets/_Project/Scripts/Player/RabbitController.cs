@@ -29,6 +29,12 @@ namespace ReverseRabbitRunner.Player
         [SerializeField] private float maxBodyTiltAngle = 15f;
         [SerializeField] private float bodyTiltSpeed = 8f;
 
+        [Header("Stumble Settings")]
+        [SerializeField] private float stumbleSpeedPenaltySmall = 2.0f;
+        [SerializeField] private float stumbleSpeedPenaltyTall = 4.0f;
+        [SerializeField] private float stumbleRecoveryTime = 1.5f;
+        [SerializeField] private float stumbleDangerWindow = 7.0f;
+
         [Header("Physics")]
         [SerializeField] private float gravity = -30f;
 
@@ -42,6 +48,10 @@ namespace ReverseRabbitRunner.Player
         private bool isJumping;
         private float currentBodyTilt;
         private Transform bodyTransform;
+        private bool isStumbling;
+        private float stumbleTimer;
+        private float lastStumbleTime = -100f;
+        private float stumbleShakeTimer;
 
         // Input
         private InputAction moveAction;
@@ -54,8 +64,11 @@ namespace ReverseRabbitRunner.Player
         public int CurrentLane => currentLane;
         public bool IsGrounded => controller != null && controller.isGrounded;
         public bool IsJumping => isJumping;
+        public bool IsStumbling => isStumbling;
+        public bool InDangerWindow => (Time.time - lastStumbleTime) < stumbleDangerWindow;
 
         public event System.Action OnHitObstacle;
+        public event System.Action<float> OnStumble;
         public event System.Action<GameObject> OnCollectCarrot;
 
         private void Awake()
@@ -125,11 +138,21 @@ namespace ReverseRabbitRunner.Player
             // Gradually increase base speed
             baseSpeed = Mathf.Min(baseSpeed + speedIncreaseRate * Time.deltaTime, maxSpeed);
 
-            // Recover from jump speed debt over jumpRecoveryTime
+            // Recover from speed debt (jump or stumble)
             if (speedDebt > 0f)
             {
-                float recoveryRate = jumpSpeedPenalty / jumpRecoveryTime;
+                float recoveryRate = isStumbling
+                    ? stumbleSpeedPenaltyTall / stumbleRecoveryTime
+                    : jumpSpeedPenalty / jumpRecoveryTime;
                 speedDebt = Mathf.Max(speedDebt - recoveryRate * Time.deltaTime, 0f);
+            }
+
+            // Stumble recovery timer
+            if (isStumbling)
+            {
+                stumbleTimer -= Time.deltaTime;
+                if (stumbleTimer <= 0f)
+                    isStumbling = false;
             }
 
             forwardSpeed = Mathf.Max(baseSpeed - speedDebt, 2f);
@@ -206,15 +229,22 @@ namespace ReverseRabbitRunner.Player
             float targetTilt = 0f;
             if (!controller.isGrounded)
             {
-                // Tilt backward while rising, slightly forward while falling
                 targetTilt = verticalVelocity > 0 ? -maxBodyTiltAngle : maxBodyTiltAngle * 0.5f;
             }
 
             currentBodyTilt = Mathf.Lerp(currentBodyTilt, targetTilt, bodyTiltSpeed * Time.deltaTime);
 
-            // Preserve existing Y/Z rotation, only modify X tilt
+            // Stumble shake wobble
+            float shakeZ = 0f;
+            if (stumbleShakeTimer > 0f)
+            {
+                stumbleShakeTimer -= Time.deltaTime;
+                float intensity = Mathf.Clamp01(stumbleShakeTimer / stumbleRecoveryTime);
+                shakeZ = Mathf.Sin(Time.time * 30f) * 8f * intensity;
+            }
+
             Vector3 euler = bodyTransform.localEulerAngles;
-            bodyTransform.localEulerAngles = new Vector3(currentBodyTilt, euler.y, euler.z);
+            bodyTransform.localEulerAngles = new Vector3(currentBodyTilt, euler.y, shakeZ);
         }
 
         public void MoveLeft()
@@ -246,6 +276,25 @@ namespace ReverseRabbitRunner.Player
             OnHitObstacle?.Invoke();
         }
 
+        private void Stumble(float penalty)
+        {
+            // Two stumbles within danger window = death
+            if ((Time.time - lastStumbleTime) < stumbleDangerWindow)
+            {
+                Die();
+                return;
+            }
+
+            lastStumbleTime = Time.time;
+            speedDebt += penalty;
+            isStumbling = true;
+            stumbleTimer = stumbleRecoveryTime;
+            stumbleShakeTimer = stumbleRecoveryTime;
+
+            OnStumble?.Invoke(penalty);
+            OnHitObstacle?.Invoke();
+        }
+
         private void UpdateTargetPosition()
         {
             int centerLane = laneCount / 2;
@@ -254,6 +303,8 @@ namespace ReverseRabbitRunner.Player
 
         private void OnTriggerEnter(Collider other)
         {
+            if (!isAlive) return;
+
             if (other.CompareTag("Carrot"))
             {
                 OnCollectCarrot?.Invoke(other.gameObject);
@@ -262,7 +313,19 @@ namespace ReverseRabbitRunner.Player
             }
             else if (other.CompareTag("Obstacle"))
             {
-                HitObstacle();
+                float obstacleHeight = other.bounds.size.y;
+                bool isSmall = obstacleHeight < 1.0f;
+
+                // Jumping over a small obstacle clears it
+                if (isJumping && isSmall && !controller.isGrounded)
+                {
+                    Destroy(other.gameObject);
+                    return;
+                }
+
+                other.enabled = false;
+                float penalty = isSmall ? stumbleSpeedPenaltySmall : stumbleSpeedPenaltyTall;
+                Stumble(penalty);
             }
             else if (other.CompareTag("PowerUp"))
             {

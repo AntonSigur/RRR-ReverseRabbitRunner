@@ -21,6 +21,8 @@ namespace ReverseRabbitRunner.UI
         private bool stylesInitialized = false;
         private bool isPaused = false;
         private bool showSettings = false;
+        private bool wasStumbling;
+        private float stumbleFlashTimer;
 
         private void Start()
         {
@@ -97,6 +99,14 @@ namespace ReverseRabbitRunner.UI
                 isPaused = !isPaused;
                 Time.timeScale = isPaused ? 0f : 1f;
             }
+
+            // Stumble flash detection
+            bool currentlyStumbling = rabbit != null && rabbit.IsStumbling;
+            if (currentlyStumbling && !wasStumbling)
+                stumbleFlashTimer = 0.5f;
+            wasStumbling = currentlyStumbling;
+            if (stumbleFlashTimer > 0f)
+                stumbleFlashTimer -= Time.unscaledDeltaTime;
         }
 
         private void OnGUI()
@@ -143,6 +153,33 @@ namespace ReverseRabbitRunner.UI
                 GUI.color = Color.Lerp(Color.green, Color.red, threat);
                 GUI.DrawTexture(new Rect(barX, barY, barWidth * threat, barHeight), Texture2D.whiteTexture);
                 GUI.color = Color.white;
+            }
+
+            // Stumble warning flash (red border)
+            if (stumbleFlashTimer > 0f)
+            {
+                float alpha = Mathf.Clamp01(stumbleFlashTimer / 0.5f) * 0.4f;
+                GUI.color = new Color(1f, 0f, 0f, alpha);
+                float border = 15f;
+                GUI.DrawTexture(new Rect(0, 0, border, Screen.height), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(Screen.width - border, 0, border, Screen.height), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, border), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(0, Screen.height - border, Screen.width, border), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+            }
+
+            // Stumble danger warning
+            if (rabbit != null && rabbit.InDangerWindow)
+            {
+                var prevAlign = warningStyle.alignment;
+                var prevColor = warningStyle.normal.textColor;
+                warningStyle.alignment = TextAnchor.UpperCenter;
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
+                warningStyle.normal.textColor = new Color(1f, 0.2f, 0.2f, pulse);
+                GUI.Label(new Rect(0, padding + 60, Screen.width, 40),
+                    "\u26a0\ufe0f WATCH OUT \u2014 one more stumble!", warningStyle);
+                warningStyle.alignment = prevAlign;
+                warningStyle.normal.textColor = prevColor;
             }
 
             // High score

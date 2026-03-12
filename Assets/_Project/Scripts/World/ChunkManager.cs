@@ -25,6 +25,13 @@ namespace ReverseRabbitRunner.World
         [SerializeField] private int carrotsPerChunk = 15;
         [SerializeField] private float carrotSpacing = 3f;
 
+        [Header("Obstacle Settings")]
+        [SerializeField] private int obstacleStartChunk = 3;
+        [SerializeField] private int baseObstaclesPerChunk = 2;
+        [SerializeField] private int maxObstaclesPerChunk = 8;
+        [SerializeField] private float obstacleRampRate = 0.5f;
+        [SerializeField] private float minObstacleCarrotSpacing = 2f;
+
         // Public stats for HUD
         public float TotalDistance { get; private set; }
         public int CurrentChunkIndex { get; private set; }
@@ -37,6 +44,11 @@ namespace ReverseRabbitRunner.World
         private float totalShifted;
         private Shader urpLit;
         private float lastShiftTime;
+        private Material obstacleCrateMat;
+        private Material obstacleHayMat;
+        private Material obstacleFencePostMat;
+        private Material obstacleScarecrowBodyMat;
+        private Material obstacleScarecrowHatMat;
 
         // Theme definitions
         public enum ChunkTheme { Concrete, SnowMud, Grass }
@@ -176,6 +188,9 @@ namespace ReverseRabbitRunner.World
             // Carrots scattered in the chunk
             SpawnCarrotsInChunk(chunkRoot.transform, chunkStartZ);
 
+            // Obstacles (after warm-up chunks)
+            SpawnObstaclesInChunk(chunkRoot.transform, chunkStartZ, themeIndex - 1);
+
             activeChunks.Add(new ChunkData
             {
                 root = chunkRoot,
@@ -219,6 +234,191 @@ namespace ReverseRabbitRunner.World
                 carrot.GetComponent<Collider>().isTrigger = true;
                 carrot.AddComponent<CarrotBob>();
             }
+        }
+
+        private void SpawnObstaclesInChunk(Transform parent, float chunkStartZ, int chunkIndex)
+        {
+            if (chunkIndex < obstacleStartChunk) return;
+
+            // Lazy-init obstacle materials
+            if (obstacleCrateMat == null)
+            {
+                obstacleCrateMat = MakeMat(new Color(0.45f, 0.28f, 0.12f));
+                obstacleHayMat = MakeMat(new Color(0.85f, 0.75f, 0.35f));
+                obstacleFencePostMat = MakeMat(new Color(0.35f, 0.22f, 0.10f));
+                obstacleScarecrowBodyMat = MakeMat(new Color(0.50f, 0.35f, 0.15f));
+                obstacleScarecrowHatMat = MakeMat(new Color(0.15f, 0.10f, 0.05f));
+            }
+
+            int obstacleCount = Mathf.Min(maxObstaclesPerChunk,
+                Mathf.RoundToInt(baseObstaclesPerChunk + (chunkIndex - obstacleStartChunk) * obstacleRampRate));
+
+            float tallRatio = Mathf.Clamp01((chunkIndex - obstacleStartChunk) * 0.05f);
+
+            // Collect carrot Z positions per lane for overlap avoidance
+            var carrotsByLane = new List<float>[maxLanes];
+            for (int i = 0; i < maxLanes; i++) carrotsByLane[i] = new List<float>();
+            foreach (Transform child in parent)
+            {
+                if (child.CompareTag("Carrot"))
+                {
+                    int lane = Mathf.RoundToInt(child.position.x / laneWidth) + maxLanes / 2;
+                    lane = Mathf.Clamp(lane, 0, maxLanes - 1);
+                    carrotsByLane[lane].Add(child.position.z);
+                }
+            }
+
+            var placed = new List<(int lane, float z)>();
+            float zRowTolerance = 2.0f;
+
+            for (int i = 0; i < obstacleCount; i++)
+            {
+                for (int attempt = 0; attempt < 20; attempt++)
+                {
+                    int lane = Random.Range(0, maxLanes);
+                    float z = chunkStartZ - Random.Range(3f, chunkLength - 3f);
+
+                    // Avoid overlapping carrots
+                    bool carrotConflict = false;
+                    foreach (float cz in carrotsByLane[lane])
+                    {
+                        if (Mathf.Abs(cz - z) < minObstacleCarrotSpacing)
+                        {
+                            carrotConflict = true;
+                            break;
+                        }
+                    }
+                    if (carrotConflict) continue;
+
+                    // Guarantee at least 1 free lane at this Z row
+                    var lanesNearZ = new HashSet<int>();
+                    foreach (var (pl, pz) in placed)
+                    {
+                        if (Mathf.Abs(pz - z) < zRowTolerance)
+                            lanesNearZ.Add(pl);
+                    }
+                    lanesNearZ.Add(lane);
+                    if (lanesNearZ.Count >= maxLanes) continue;
+
+                    // Avoid stacking obstacles in the same lane too close
+                    bool tooClose = false;
+                    foreach (var (pl, pz) in placed)
+                    {
+                        if (pl == lane && Mathf.Abs(pz - z) < 1.5f)
+                        {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    if (tooClose) continue;
+
+                    placed.Add((lane, z));
+
+                    bool isTall = Random.value < tallRatio;
+                    float xPos = (lane - maxLanes / 2) * laneWidth;
+                    Vector3 pos = new Vector3(xPos, 0f, z);
+
+                    if (isTall)
+                    {
+                        if (Random.value < 0.5f)
+                            CreateFencePost(parent, pos);
+                        else
+                            CreateScarecrow(parent, pos);
+                    }
+                    else
+                    {
+                        if (Random.value < 0.5f)
+                            CreateFarmCrate(parent, pos);
+                        else
+                            CreateHayBale(parent, pos);
+                    }
+                    break;
+                }
+            }
+        }
+
+        private void CreateFarmCrate(Transform parent, Vector3 position)
+        {
+            var obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            obj.name = "FarmCrate";
+            obj.tag = "Obstacle";
+            obj.transform.parent = parent;
+            obj.transform.position = position + new Vector3(0, 0.25f, 0);
+            obj.transform.localScale = new Vector3(0.8f, 0.5f, 0.8f);
+            obj.GetComponent<Renderer>().material = obstacleCrateMat;
+            obj.GetComponent<Collider>().isTrigger = true;
+        }
+
+        private void CreateHayBale(Transform parent, Vector3 position)
+        {
+            var obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            obj.name = "HayBale";
+            obj.tag = "Obstacle";
+            obj.transform.parent = parent;
+            obj.transform.position = position + new Vector3(0, 0.25f, 0);
+            obj.transform.localScale = new Vector3(1.2f, 0.5f, 0.6f);
+            obj.GetComponent<Renderer>().material = obstacleHayMat;
+            obj.GetComponent<Collider>().isTrigger = true;
+        }
+
+        private void CreateFencePost(Transform parent, Vector3 position)
+        {
+            var obj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            obj.name = "FencePost";
+            obj.tag = "Obstacle";
+            obj.transform.parent = parent;
+            obj.transform.position = position + new Vector3(0, 1.0f, 0);
+            obj.transform.localScale = new Vector3(0.3f, 1.0f, 0.3f);
+            obj.GetComponent<Renderer>().material = obstacleFencePostMat;
+            Object.DestroyImmediate(obj.GetComponent<Collider>());
+            var col = obj.AddComponent<BoxCollider>();
+            col.size = new Vector3(1f, 2f, 1f);
+            col.isTrigger = true;
+        }
+
+        private void CreateScarecrow(Transform parent, Vector3 position)
+        {
+            var root = new GameObject("Scarecrow");
+            root.tag = "Obstacle";
+            root.transform.parent = parent;
+            root.transform.position = position;
+
+            var pole = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pole.name = "Pole";
+            pole.transform.parent = root.transform;
+            pole.transform.localPosition = new Vector3(0, 0.9f, 0);
+            pole.transform.localScale = new Vector3(0.15f, 1.8f, 0.15f);
+            Object.DestroyImmediate(pole.GetComponent<Collider>());
+            pole.GetComponent<Renderer>().material = obstacleScarecrowBodyMat;
+
+            var arm = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            arm.name = "Arm";
+            arm.transform.parent = root.transform;
+            arm.transform.localPosition = new Vector3(0, 1.4f, 0);
+            arm.transform.localScale = new Vector3(1.2f, 0.1f, 0.1f);
+            Object.DestroyImmediate(arm.GetComponent<Collider>());
+            arm.GetComponent<Renderer>().material = obstacleScarecrowBodyMat;
+
+            var head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            head.name = "Head";
+            head.transform.parent = root.transform;
+            head.transform.localPosition = new Vector3(0, 1.65f, 0);
+            head.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+            Object.DestroyImmediate(head.GetComponent<Collider>());
+            head.GetComponent<Renderer>().material = obstacleScarecrowBodyMat;
+
+            var hat = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            hat.name = "Hat";
+            hat.transform.parent = root.transform;
+            hat.transform.localPosition = new Vector3(0, 1.9f, 0);
+            hat.transform.localScale = new Vector3(0.5f, 0.08f, 0.5f);
+            Object.DestroyImmediate(hat.GetComponent<Collider>());
+            hat.GetComponent<Renderer>().material = obstacleScarecrowHatMat;
+
+            var col = root.AddComponent<BoxCollider>();
+            col.center = new Vector3(0, 0.9f, 0);
+            col.size = new Vector3(1.2f, 1.8f, 0.4f);
+            col.isTrigger = true;
         }
 
         private void DespawnOldestChunk()

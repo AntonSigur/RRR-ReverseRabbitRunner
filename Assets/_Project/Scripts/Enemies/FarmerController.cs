@@ -18,6 +18,12 @@ namespace ReverseRabbitRunner.Enemies
 
         [Header("Obstacle Penalty")]
         [SerializeField] private float obstaclePenaltyDistance = 3f;
+        [SerializeField] private float smallObstaclePenaltyDistance = 2f;
+        [SerializeField] private float tallObstaclePenaltyDistance = 4f;
+        [SerializeField] private float farmerRecoveryTime = 10f;
+
+        [Header("Catch Animation")]
+        [SerializeField] private float catchPauseDuration = 1.0f;
 
         [Header("Lateral Following")]
         [SerializeField] private float lateralFollowSpeed = 3f;
@@ -31,6 +37,8 @@ namespace ReverseRabbitRunner.Enemies
         private float currentDistance;
         private float currentX;
         private float swayOffset;
+        private bool isCatching;
+        private float catchTimer;
         private Player.RabbitController rabbitController;
 
         public float CurrentDistance => currentDistance;
@@ -54,7 +62,7 @@ namespace ReverseRabbitRunner.Enemies
                 rabbitController = playerTransform.GetComponent<Player.RabbitController>();
                 if (rabbitController != null)
                 {
-                    rabbitController.OnHitObstacle += OnRabbitHitObstacle;
+                    rabbitController.OnStumble += OnRabbitStumble;
                 }
             }
         }
@@ -64,8 +72,31 @@ namespace ReverseRabbitRunner.Enemies
             if (playerTransform == null) return;
             if (Core.GameManager.Instance?.CurrentState != Core.GameManager.GameState.Playing) return;
 
+            // Catch animation: farmer pauses then kills
+            if (isCatching)
+            {
+                catchTimer -= Time.deltaTime;
+                Vector3 catchPos = new Vector3(
+                    playerTransform.position.x,
+                    0f,
+                    playerTransform.position.z + catchDistance
+                );
+                transform.position = catchPos;
+                Vector3 catchLook = playerTransform.position - transform.position;
+                catchLook.y = 0;
+                if (catchLook.sqrMagnitude > 0.01f)
+                    transform.rotation = Quaternion.LookRotation(catchLook);
+                if (catchTimer <= 0f)
+                {
+                    OnCaughtRabbit?.Invoke();
+                    rabbitController?.Die();
+                }
+                return;
+            }
+
             // Farmer slowly falls back over time (rabbit outrunning)
-            currentDistance = Mathf.Min(currentDistance + fallBackSpeed * Time.deltaTime, baseDistance);
+            float recoveryRate = (baseDistance - catchDistance) / Mathf.Max(farmerRecoveryTime, 0.1f);
+            currentDistance = Mathf.Min(currentDistance + recoveryRate * Time.deltaTime, baseDistance);
 
             // Lateral following — delayed and slightly off
             float targetX = playerTransform.position.x;
@@ -91,26 +122,28 @@ namespace ReverseRabbitRunner.Enemies
             // Check if farmer caught the rabbit
             if (currentDistance <= catchDistance)
             {
-                CatchRabbit();
+                StartCatchSequence();
             }
         }
 
-        private void OnRabbitHitObstacle()
+        public void OnRabbitStumble(float severity)
         {
-            currentDistance = Mathf.Max(catchDistance, currentDistance - obstaclePenaltyDistance);
+            float penalty = severity > 3f ? tallObstaclePenaltyDistance : smallObstaclePenaltyDistance;
+            currentDistance = Mathf.Max(catchDistance, currentDistance - penalty);
         }
 
-        private void CatchRabbit()
+        private void StartCatchSequence()
         {
-            OnCaughtRabbit?.Invoke();
-            rabbitController?.Die();
+            if (isCatching) return;
+            isCatching = true;
+            catchTimer = catchPauseDuration;
         }
 
         private void OnDestroy()
         {
             if (rabbitController != null)
             {
-                rabbitController.OnHitObstacle -= OnRabbitHitObstacle;
+                rabbitController.OnStumble -= OnRabbitStumble;
             }
         }
     }
