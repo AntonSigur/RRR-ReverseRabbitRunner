@@ -1,10 +1,10 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ReverseRabbitRunner.Core
 {
     /// <summary>
-    /// Auto-starts the game when Play is pressed in the editor.
-    /// Gives a brief countdown then starts gameplay.
+    /// Auto-starts the game when Play is pressed — only in the game scene.
     /// </summary>
     public class AutoStartGame : MonoBehaviour
     {
@@ -12,6 +12,10 @@ namespace ReverseRabbitRunner.Core
 
         private void Start()
         {
+            // Only auto-start in the game scene, not in MainMenu
+            if (SceneManager.GetActiveScene().name == "MainMenu")
+                return;
+
             Invoke(nameof(StartGame), startDelay);
         }
 

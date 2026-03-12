@@ -205,8 +205,7 @@ namespace ReverseRabbitRunner.UI
                     if (GUI.Button(new Rect(btnX, Screen.height * 0.58f, btnW, btnH), "✕  QUIT TO MENU", buttonStyle))
                     {
                         isPaused = false;
-                        Time.timeScale = 1f;
-                        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+                        Core.GameManager.Instance?.ReturnToMenu();
                     }
 
                     infoStyle.alignment = TextAnchor.MiddleCenter;

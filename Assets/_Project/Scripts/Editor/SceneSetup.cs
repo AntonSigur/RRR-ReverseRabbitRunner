@@ -15,6 +15,18 @@ namespace ReverseRabbitRunner.Editor
         [MenuItem("ReverseRabbitRunner/Setup Game Scene")]
         public static void SetupGameScene()
         {
+            // Safety: ensure we're editing SampleScene, not MainMenu
+            var activeScene = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            if (activeScene.name == "MainMenu")
+            {
+                if (!EditorUtility.DisplayDialog("Wrong Scene",
+                    "You are in the MainMenu scene. Setup Game Scene should run on SampleScene.\n\nSwitch to SampleScene now?",
+                    "Switch & Setup", "Cancel"))
+                    return;
+                UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
+                UnityEditor.SceneManagement.EditorSceneManager.OpenScene("Assets/Scenes/SampleScene.unity");
+            }
+
             CleanupScene();
             SetupLighting();
             CreateEditorPreviewGround();

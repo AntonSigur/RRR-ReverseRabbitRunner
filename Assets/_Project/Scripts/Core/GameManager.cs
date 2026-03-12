@@ -1,9 +1,11 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ReverseRabbitRunner.Core
 {
     /// <summary>
     /// Central game state manager — controls game flow, score, and lifecycle.
+    /// Listens for scene changes to auto-reset state when returning to MainMenu.
     /// </summary>
     public class GameManager : MonoBehaviour
     {
@@ -26,8 +28,28 @@ namespace ReverseRabbitRunner.Core
                 return;
             }
             Instance = this;
-            transform.SetParent(null); // Must be root for DontDestroyOnLoad
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
+        }
+
+        private void OnEnable()
+        {
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Auto-reset to Menu state when MainMenu scene loads
+            if (scene.name == "MainMenu")
+            {
+                Time.timeScale = 1f;
+                SetState(GameState.Menu);
+            }
         }
 
         public void StartGame()
@@ -64,6 +86,16 @@ namespace ReverseRabbitRunner.Core
             Time.timeScale = 1f;
             ScoreManager.Instance?.ResetScore();
             SetState(GameState.Playing);
+        }
+
+        /// <summary>
+        /// Properly return to the main menu — resets everything.
+        /// </summary>
+        public void ReturnToMenu()
+        {
+            Time.timeScale = 1f;
+            ScoreManager.Instance?.ResetScore();
+            SceneManager.LoadScene("MainMenu");
         }
 
         private void SetState(GameState newState)
