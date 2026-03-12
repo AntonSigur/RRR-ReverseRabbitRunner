@@ -18,7 +18,7 @@ namespace ReverseRabbitRunner.Player
 
         [Header("Movement")]
         [SerializeField] private float forwardSpeed = 10f;
-        [SerializeField] private float speedIncreaseRate = 0.1f;
+        [SerializeField] private float speedIncreaseRate = 0.05f;
         [SerializeField] private float maxSpeed = 30f;
 
         [Header("Physics")]

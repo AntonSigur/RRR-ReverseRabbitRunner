@@ -104,9 +104,9 @@ namespace ReverseRabbitRunner.World
                 SpawnNextChunk();
             }
 
-            // Despawn chunks far behind
+            // Despawn chunks far behind (extra buffer so they don't pop out visibly)
             while (activeChunks.Count > 0 &&
-                   activeChunks[0].startZ > playerZ + chunksBehind * chunkLength + chunkLength)
+                   activeChunks[0].startZ > playerZ + (chunksBehind + 1) * chunkLength + chunkLength * 2)
             {
                 DespawnOldestChunk();
             }
