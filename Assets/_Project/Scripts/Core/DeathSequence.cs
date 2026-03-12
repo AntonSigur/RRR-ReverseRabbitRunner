@@ -66,8 +66,11 @@ namespace ReverseRabbitRunner.Core
             rabbitTransform = rabbit;
             mainCamera = Camera.main;
 
+            Debug.Log($"[DeathSequence] Play() started. Farmer={farmer?.name}, Rabbit={rabbit?.name}, MainCam={mainCamera?.name}");
+
             // Find the fork pivot on the farmer for animation
             farmerForkPivot = FindDeep(farmer, "RightForkPivot") ?? FindDeep(farmer, "ForkPivot");
+            Debug.Log($"[DeathSequence] ForkPivot found: {(farmerForkPivot != null ? farmerForkPivot.name : "NULL")}");
 
             // Disable fork wave animation so it doesn't fight the death sequence
             var forkWave = farmer.GetComponent<Enemies.FarmerForkWave>();
@@ -94,6 +97,7 @@ namespace ReverseRabbitRunner.Core
 
         private IEnumerator RunSequence()
         {
+            Debug.Log("[DeathSequence] RunSequence coroutine started");
             // Use unscaled time since we set timeScale
             Time.timeScale = slowMotionScale;
 
@@ -164,6 +168,7 @@ namespace ReverseRabbitRunner.Core
             }
 
             // Spawn particles on impact!
+            Debug.Log($"[DeathSequence] STAB! Spawning {particleBurstCount} particles at {rabbitTransform.position + Vector3.up * 0.5f} (blood={UseBloodParticles})");
             SpawnDeathParticles(rabbitTransform.position + Vector3.up * 0.5f);
 
             // === STAGE 4: Rabbit falls ===
@@ -245,35 +250,47 @@ namespace ReverseRabbitRunner.Core
 
         private void DisableMirrorCameras()
         {
-            // Disable ALL mirror cameras (Camera components with "Mirror" in name)
+            // Disable ALL mirror cameras
             var allCameras = FindObjectsByType<Camera>(FindObjectsSortMode.None);
             foreach (var cam in allCameras)
             {
+                if (cam == mainCamera) continue;
                 if (cam.name.Contains("Mirror"))
                 {
+                    // Clear the RenderTexture to black before disabling
+                    if (cam.targetTexture != null)
+                    {
+                        RenderTexture prev = RenderTexture.active;
+                        RenderTexture.active = cam.targetTexture;
+                        GL.Clear(true, true, Color.black);
+                        RenderTexture.active = prev;
+                    }
                     cam.enabled = false;
-                    cam.gameObject.SetActive(false);
                 }
             }
 
-            // Disable the MirrorCamera controller script so it stops adjusting
-            var mirrorController = rabbitTransform.GetComponent<Player.MirrorCamera>();
-            if (mirrorController != null) mirrorController.enabled = false;
+            // Disable the MirrorCamera controller script
+            if (rabbitTransform != null)
+            {
+                var mirrorController = rabbitTransform.GetComponent<Player.MirrorCamera>();
+                if (mirrorController != null) mirrorController.enabled = false;
+            }
 
-            // Hide mirror quads (the visible glass surfaces)
-            HideChildRenderers(rabbitTransform, "Mirror");
+            // Disable all Glass quad renderers and mirror assembly objects
+            if (rabbitTransform != null)
+                DisableMirrorVisuals(rabbitTransform);
         }
 
-        private void HideChildRenderers(Transform root, string nameContains)
+        private void DisableMirrorVisuals(Transform root)
         {
             foreach (Transform child in root)
             {
-                if (child.name.Contains(nameContains))
+                // Disable Glass quads, Mirror assemblies, and mirror cameras
+                if (child.name == "Glass" || child.name.Contains("MirrorAssembly") || child.name.Contains("MirrorCamera"))
                 {
-                    var renderer = child.GetComponent<Renderer>();
-                    if (renderer != null) renderer.enabled = false;
+                    child.gameObject.SetActive(false);
                 }
-                HideChildRenderers(child, nameContains);
+                DisableMirrorVisuals(child);
             }
         }
 
@@ -282,37 +299,37 @@ namespace ReverseRabbitRunner.Core
             bool useBlood = UseBloodParticles;
             particles = new GameObject[particleBurstCount];
 
-            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
-            if (urpLit == null) urpLit = Shader.Find("Universal Render Pipeline/Unlit");
+            // Get a working material by cloning from an existing scene renderer
+            // Shader.Find() often fails at runtime in URP due to shader stripping
+            Material baseMaterial = GetSceneBaseMaterial();
 
             for (int i = 0; i < particleBurstCount; i++)
             {
                 GameObject p;
                 if (useBlood)
                 {
-                    // Blood drop: visible red elongated sphere
                     p = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     p.name = "BloodDrop";
                     float scale = Random.Range(0.06f, 0.2f);
                     p.transform.localScale = new Vector3(scale, scale * 2f, scale);
-                    var mat = new Material(urpLit);
+                    var mat = new Material(baseMaterial);
                     mat.color = new Color(
                         Random.Range(0.7f, 1.0f),
                         Random.Range(0.0f, 0.08f),
                         Random.Range(0.0f, 0.05f)
                     );
-                    mat.SetFloat("_Smoothness", 0.9f);
+                    if (mat.HasProperty("_Smoothness"))
+                        mat.SetFloat("_Smoothness", 0.9f);
                     p.GetComponent<Renderer>().material = mat;
                 }
                 else
                 {
-                    // Carrot piece: orange/green cylinders
                     p = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                     p.name = "CarrotPiece";
                     float scale = Random.Range(0.06f, 0.18f);
                     p.transform.localScale = new Vector3(scale, scale * 2.5f, scale);
-                    var mat = new Material(urpLit);
-                    bool isGreen = Random.value > 0.7f; // 30% green tops
+                    var mat = new Material(baseMaterial);
+                    bool isGreen = Random.value > 0.7f;
                     mat.color = isGreen
                         ? new Color(0.2f, Random.Range(0.5f, 0.8f), 0.1f)
                         : new Color(Random.Range(0.85f, 1f), Random.Range(0.3f, 0.55f), Random.Range(0.0f, 0.1f));
@@ -322,7 +339,6 @@ namespace ReverseRabbitRunner.Core
                 Object.DestroyImmediate(p.GetComponent<Collider>());
                 p.transform.position = origin + Random.insideUnitSphere * 0.15f;
 
-                // Physics: compensate for slow-motion by using stronger forces
                 var rb = p.AddComponent<Rigidbody>();
                 rb.mass = 0.01f;
                 rb.useGravity = true;
@@ -338,6 +354,34 @@ namespace ReverseRabbitRunner.Core
                 particles[i] = p;
                 Destroy(p, particleLifetime / Mathf.Max(slowMotionScale, 0.1f));
             }
+        }
+
+        /// <summary>
+        /// Get a working base material by cloning from an existing scene renderer.
+        /// This avoids Shader.Find() failures due to URP shader stripping at runtime.
+        /// </summary>
+        private Material GetSceneBaseMaterial()
+        {
+            var renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
+            foreach (var r in renderers)
+            {
+                if (r.material != null && r.material.shader != null
+                    && r.material.shader.name.Contains("Universal Render Pipeline"))
+                {
+                    Debug.Log($"[DeathSequence] Using shader from '{r.name}': {r.material.shader.name}");
+                    return new Material(r.material.shader);
+                }
+            }
+
+            Debug.LogWarning("[DeathSequence] No URP shader found from scene renderers, trying Shader.Find...");
+            Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
+            if (urpLit != null) return new Material(urpLit);
+
+            Shader urpUnlit = Shader.Find("Universal Render Pipeline/Unlit");
+            if (urpUnlit != null) return new Material(urpUnlit);
+
+            Debug.LogWarning("[DeathSequence] Falling back to Standard shader");
+            return new Material(Shader.Find("Standard"));
         }
 
         private void OnGUI()
