@@ -115,8 +115,8 @@ namespace ReverseRabbitRunner.Core
             if (approachDir.sqrMagnitude < 0.1f) approachDir = Vector3.forward;
             approachDir = approachDir.normalized;
 
-            Vector3 farmerStart = rabbitTransform.position + approachDir * 3.5f;
-            Vector3 farmerEnd = rabbitTransform.position + approachDir * 1.0f;
+            Vector3 farmerStart = rabbitTransform.position + approachDir * 5f;
+            Vector3 farmerEnd = rabbitTransform.position + approachDir * 1.5f;
             farmerTransform.position = farmerStart;
 
             elapsed = 0f;
@@ -157,7 +157,7 @@ namespace ReverseRabbitRunner.Core
             // === STAGE 3: STAB! ===
             elapsed = 0f;
             Quaternion forkStabRot = forkStartRot * Quaternion.Euler(90f, 0, 0); // Fork thrust hard forward/down
-            Vector3 farmerLungeTarget = rabbitTransform.position + approachDir * 0.3f;
+            Vector3 farmerLungeTarget = rabbitTransform.position + approachDir * 0.8f;
 
             while (elapsed < stabDuration)
             {
@@ -181,12 +181,12 @@ namespace ReverseRabbitRunner.Core
             Debug.Log($"[DeathSequence] STAB! Spawning {particleBurstCount} particles at {rabbitTransform.position + Vector3.up * 0.5f} (blood={UseBloodParticles})");
             SpawnDeathParticles(rabbitTransform.position + Vector3.up * 0.5f);
 
-            // === STAGE 4: Rabbit falls ===
+            // === STAGE 4: Rabbit falls, farmer steps back ===
             elapsed = 0f;
             Vector3 rabbitStart = rabbitTransform.position;
             Quaternion rabbitStartRot = rabbitTransform.rotation;
-            // Find the Body child for the fall animation
             Transform bodyChild = rabbitTransform.Find("Body");
+            Vector3 farmerPullBack = rabbitTransform.position + approachDir * 2.5f;
 
             while (elapsed < rabbitFallDuration)
             {
@@ -200,6 +200,8 @@ namespace ReverseRabbitRunner.Core
                     bodyChild.localPosition = new Vector3(0, -t * 0.3f, 0);
                 }
 
+                // Farmer steps back after the stab
+                farmerTransform.position = Vector3.Lerp(farmerLungeTarget, farmerPullBack, t);
                 FaceFarmerToRabbit();
                 UpdateOrbitCamera(sceneCenter);
 
