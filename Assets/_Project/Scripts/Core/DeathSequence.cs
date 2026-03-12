@@ -318,7 +318,7 @@ namespace ReverseRabbitRunner.Core
                 {
                     p = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                     p.name = "BloodDrop";
-                    float scale = Random.Range(0.06f, 0.2f);
+                    float scale = Random.Range(0.1f, 0.3f);
                     p.transform.localScale = new Vector3(scale, scale * 2f, scale);
                     var mat = new Material(baseMaterial);
                     mat.color = new Color(
@@ -348,20 +348,22 @@ namespace ReverseRabbitRunner.Core
                 p.transform.position = origin + Random.insideUnitSphere * 0.15f;
 
                 var rb = p.AddComponent<Rigidbody>();
-                rb.mass = 0.01f;
+                rb.mass = 0.1f;
                 rb.useGravity = true;
-                // Don't compensate for slow-mo — slow-mo blood looks more dramatic
-                Vector3 force = new Vector3(
+                rb.drag = 0.5f;
+                // VelocityChange ignores mass — values are direct m/s
+                Vector3 velocity = new Vector3(
                     Random.Range(-particleSpread, particleSpread),
-                    Random.Range(3f, particleSpread * 2f),
+                    Random.Range(2f, particleSpread * 1.5f),
                     Random.Range(-particleSpread, particleSpread)
                 );
-                rb.AddForce(force, ForceMode.Impulse);
-                rb.AddTorque(Random.insideUnitSphere * 10f, ForceMode.Impulse);
+                rb.AddForce(velocity, ForceMode.VelocityChange);
+                rb.AddTorque(Random.insideUnitSphere * 5f, ForceMode.VelocityChange);
 
                 particles[i] = p;
                 Destroy(p, particleLifetime);
             }
+            Debug.Log($"[DeathSequence] Spawned {particleBurstCount} particles. First at {particles[0]?.transform.position}");
         }
 
         /// <summary>

@@ -122,6 +122,21 @@ namespace ReverseRabbitRunner.Player
         {
             if (!isAlive) return;
 
+            // DEBUG: Shift+1 = instant death (farmer catches up and kills)
+            #if UNITY_EDITOR
+            if ((Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed && Keyboard.current.digit1Key.wasPressedThisFrame)
+                || (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.Alpha1)))
+            {
+                Debug.Log("[DEBUG] Shift+1: Triggering instant death sequence");
+                // Move farmer right next to rabbit
+                var farmerObj = GameObject.FindGameObjectWithTag("Farmer");
+                if (farmerObj != null)
+                    farmerObj.transform.position = transform.position + Vector3.forward * 1.5f;
+                Die();
+                return;
+            }
+            #endif
+
             // Gravity first — so grounded state is correct for input
             if (controller.isGrounded && verticalVelocity < 0f)
             {
