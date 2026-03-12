@@ -69,7 +69,7 @@ namespace ReverseRabbitRunner.Editor
             sun.shadowStrength = 0.85f;
             // Light comes from behind the camera / farmer side (+Z), low angle for long shadows.
             // Shadow projects in -Z (running direction) so it's visible in the mirrors.
-            sunObj.transform.rotation = Quaternion.Euler(20f, 180f, 0f);
+            sunObj.transform.rotation = Quaternion.Euler(30f, 180f, 0f);
         }
 
         private static GameObject CreateGround()
