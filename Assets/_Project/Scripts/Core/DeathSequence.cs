@@ -227,9 +227,10 @@ namespace ReverseRabbitRunner.Core
                 yield return null;
             }
 
-            // Sequence complete — restore time and trigger game over UI
+            // Sequence complete — clear fade overlay and let GameHUD show game over
             Time.timeScale = 0f;
             isPlaying = false;
+            fadeAlpha = 0f; // Clear black overlay so GameHUD game over screen is visible
 
             GameManager.Instance?.GameOver();
         }
