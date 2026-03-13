@@ -21,6 +21,8 @@ namespace ReverseRabbitRunner.UI
         private bool stylesInitialized = false;
         private bool isPaused = false;
         private bool showSettings = false;
+        private bool wasStumbling;
+        private float stumbleFlashTimer;
 
         private void Start()
         {
@@ -97,15 +99,30 @@ namespace ReverseRabbitRunner.UI
                 isPaused = !isPaused;
                 Time.timeScale = isPaused ? 0f : 1f;
             }
+
+            // Stumble flash detection
+            bool currentlyStumbling = rabbit != null && rabbit.IsStumbling;
+            if (currentlyStumbling && !wasStumbling)
+                stumbleFlashTimer = 0.5f;
+            wasStumbling = currentlyStumbling;
+            if (stumbleFlashTimer > 0f)
+                stumbleFlashTimer -= Time.unscaledDeltaTime;
         }
 
         private void OnGUI()
         {
             if (!stylesInitialized) InitStyles();
 
+            // Hide HUD during death cinematic (except game over overlay after it ends)
+            var deathSeqCheck = FindAnyObjectByType<Core.DeathSequence>();
+            bool deathPlaying = deathSeqCheck != null && deathSeqCheck.IsPlaying;
+
             float padding = 20f;
             var score = Core.ScoreManager.Instance;
             var game = Core.GameManager.Instance;
+
+            // Skip HUD drawing during death sequence (cinematic plays full-screen)
+            if (deathPlaying) return;
 
             // Score (top-left)
             string scoreText = $"🥕 {(score != null ? score.CurrentScore : 0)}";
@@ -143,6 +160,33 @@ namespace ReverseRabbitRunner.UI
                 GUI.color = Color.Lerp(Color.green, Color.red, threat);
                 GUI.DrawTexture(new Rect(barX, barY, barWidth * threat, barHeight), Texture2D.whiteTexture);
                 GUI.color = Color.white;
+            }
+
+            // Stumble warning flash (red border)
+            if (stumbleFlashTimer > 0f)
+            {
+                float alpha = Mathf.Clamp01(stumbleFlashTimer / 0.5f) * 0.4f;
+                GUI.color = new Color(1f, 0f, 0f, alpha);
+                float border = 15f;
+                GUI.DrawTexture(new Rect(0, 0, border, Screen.height), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(Screen.width - border, 0, border, Screen.height), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, border), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(0, Screen.height - border, Screen.width, border), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+            }
+
+            // Stumble danger warning
+            if (rabbit != null && rabbit.InDangerWindow)
+            {
+                var prevAlign = warningStyle.alignment;
+                var prevColor = warningStyle.normal.textColor;
+                warningStyle.alignment = TextAnchor.UpperCenter;
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
+                warningStyle.normal.textColor = new Color(1f, 0.2f, 0.2f, pulse);
+                GUI.Label(new Rect(0, padding + 60, Screen.width, 40),
+                    "\u26a0\ufe0f WATCH OUT \u2014 one more stumble!", warningStyle);
+                warningStyle.alignment = prevAlign;
+                warningStyle.normal.textColor = prevColor;
             }
 
             // High score
@@ -239,6 +283,17 @@ namespace ReverseRabbitRunner.UI
                     AudioListener.volume = vol;
                     PlayerPrefs.SetFloat("MasterVolume", vol);
 
+                    // Death particle mode toggle
+                    infoStyle.fontSize = 22;
+                    GUI.Label(new Rect(0, Screen.height * 0.64f, Screen.width, 30), "Death Effect", infoStyle);
+                    infoStyle.fontSize = 18;
+                    bool useBlood = Core.DeathSequence.UseBloodParticles;
+                    string modeLabel = useBlood ? "🩸 Blood (click to change)" : "🥕 Carrots (click to change)";
+                    if (GUI.Button(new Rect(cx - 150, Screen.height * 0.685f, 300, 35), modeLabel, buttonStyle))
+                    {
+                        Core.DeathSequence.UseBloodParticles = !useBlood;
+                    }
+
                     if (buttonStyle == null)
                     {
                         buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 24, fontStyle = FontStyle.Bold };
@@ -255,8 +310,10 @@ namespace ReverseRabbitRunner.UI
                 return; // Don't draw game over or controls hint while paused
             }
 
-            // Game Over overlay
-            if (game != null && game.CurrentState == Core.GameManager.GameState.GameOver)
+            // Game Over overlay — but NOT while death sequence is playing
+            var deathSeq = FindAnyObjectByType<Core.DeathSequence>();
+            if (game != null && game.CurrentState == Core.GameManager.GameState.GameOver
+                && (deathSeq == null || !deathSeq.IsPlaying))
             {
                 // Dark overlay
                 GUI.color = new Color(0, 0, 0, 0.6f);
