@@ -156,7 +156,7 @@ namespace ReverseRabbitRunner.Core
 
             // === STAGE 3: STAB! ===
             elapsed = 0f;
-            Quaternion forkStabRot = forkStartRot * Quaternion.Euler(120f, 0, -37f); // Fork thrust forward/down + tilt toward rabbit
+            Quaternion forkStabRot = forkStartRot * Quaternion.Euler(110f, 30f, 23f);
             Vector3 farmerLungeTarget = rabbitTransform.position + approachDir * 0.5f;
 
             while (elapsed < stabDuration)
