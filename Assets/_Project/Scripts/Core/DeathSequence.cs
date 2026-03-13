@@ -42,6 +42,7 @@ namespace ReverseRabbitRunner.Core
         private Transform farmerTransform;
         private Transform rabbitTransform;
         private Transform farmerForkPivot;
+        private Transform rabbitNose;
         private Camera mainCamera;
         private Transform originalCamParent;
         private float orbitAngle;
@@ -71,6 +72,10 @@ namespace ReverseRabbitRunner.Core
             // Find the fork pivot on the farmer for animation
             farmerForkPivot = FindDeep(farmer, "RightForkPivot") ?? FindDeep(farmer, "ForkPivot");
             Debug.Log($"[DeathSequence] ForkPivot found: {(farmerForkPivot != null ? farmerForkPivot.name : "NULL")}");
+
+            // Find the rabbit's nose as aim target
+            rabbitNose = FindDeep(rabbit, "RabbitNose");
+            Debug.Log($"[DeathSequence] RabbitNose found: {(rabbitNose != null ? rabbitNose.name : "NULL")}");
 
             // Disable farmer's normal chase behavior so it doesn't fight the sequence
             var farmerCtrl = farmer.GetComponent<Enemies.FarmerController>();
@@ -154,10 +159,30 @@ namespace ReverseRabbitRunner.Core
                 yield return null;
             }
 
-            // === STAGE 3: STAB! ===
+            // === STAGE 3: STAB! — aim Prong_1 at rabbit's nose ===
             elapsed = 0f;
-            Quaternion forkStabRot = forkStartRot * Quaternion.Euler(100f, -30f, 20f);
             Vector3 farmerLungeTarget = rabbitTransform.position + approachDir * 0.5f;
+
+            // Calculate the stab rotation that points the fork at the rabbit's nose
+            Quaternion forkStabRot;
+            Transform prong1 = FindDeep(farmerForkPivot, "Prong_1");
+            if (rabbitNose != null && farmerForkPivot != null && prong1 != null)
+            {
+                // Direction from ForkPivot to rabbit nose (world space)
+                Vector3 targetDir = rabbitNose.position - farmerForkPivot.position;
+                // Direction from ForkPivot to Prong_1 (world space, current)
+                Vector3 prongDir = prong1.position - farmerForkPivot.position;
+                // Rotation that takes current prong direction to target direction
+                Quaternion aimCorrection = Quaternion.FromToRotation(prongDir.normalized, targetDir.normalized);
+                forkStabRot = aimCorrection * farmerForkPivot.rotation;
+                // Convert to local space
+                forkStabRot = Quaternion.Inverse(farmerForkPivot.parent != null ? farmerForkPivot.parent.rotation : Quaternion.identity) * forkStabRot;
+            }
+            else
+            {
+                // Fallback: manual rotation
+                forkStabRot = forkStartRot * Quaternion.Euler(100f, -30f, 20f);
+            }
 
             while (elapsed < stabDuration)
             {
@@ -169,7 +194,7 @@ namespace ReverseRabbitRunner.Core
                 if (farmerForkPivot != null)
                     farmerForkPivot.localRotation = Quaternion.Slerp(forkRaisedRot, forkStabRot, stabT);
 
-                // Farmer lunges into the rabbit
+                // Farmer lunges toward the rabbit
                 farmerTransform.position = Vector3.Lerp(farmerEnd, farmerLungeTarget, stabT);
                 FaceFarmerToRabbit();
                 UpdateOrbitCamera(sceneCenter);
