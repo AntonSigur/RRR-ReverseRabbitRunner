@@ -217,12 +217,12 @@ namespace ReverseRabbitRunner.Core
 
         public void PlayJump()
         {
-            PlaySFX(jump, 0.7f);
+            PlaySFX(jump, 0.3f);
         }
 
         public void PlayLaneSwitch()
         {
-            PlaySFX(laneSwitch, 0.5f);
+            PlaySFX(laneSwitch, 0.2f);
         }
 
         public void PlayDeathStab()
