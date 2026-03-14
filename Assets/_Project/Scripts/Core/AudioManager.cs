@@ -137,7 +137,8 @@ namespace ReverseRabbitRunner.Core
 
         private void OnCollectCarrot(GameObject carrot)
         {
-            PlaySFX(collectCarrot, 0.8f);
+            // Carrot collect uses a short burst (only first ~0.3s of the clip)
+            PlaySFXTrimmed(collectCarrot, 0.8f, 0.3f);
         }
 
         private void OnStumble(float penalty)
@@ -188,6 +189,43 @@ namespace ReverseRabbitRunner.Core
             src.volume = sfxVolume * masterVolume * volumeScale;
             src.pitch = 1f + Random.Range(-0.05f, 0.05f); // slight variation
             src.Play();
+        }
+
+        /// <summary>
+        /// Play only the first `maxSeconds` of a clip (stops playback after that).
+        /// Useful for making long AI-generated clips sound short and snappy.
+        /// </summary>
+        public void PlaySFXTrimmed(AudioClip clip, float volumeScale, float maxSeconds)
+        {
+            if (clip == null) return;
+
+            var src = sourcePool[nextSource];
+            nextSource = (nextSource + 1) % sourcePool.Length;
+
+            src.clip = clip;
+            src.volume = sfxVolume * masterVolume * volumeScale;
+            src.pitch = 1f + Random.Range(-0.05f, 0.05f);
+            src.Play();
+            StartCoroutine(StopAfter(src, maxSeconds));
+        }
+
+        private System.Collections.IEnumerator StopAfter(AudioSource src, float seconds)
+        {
+            yield return new WaitForSecondsRealtime(seconds);
+            if (src != null && src.isPlaying)
+            {
+                // Quick fade-out over 0.05s to avoid click
+                float startVol = src.volume;
+                float elapsed = 0f;
+                while (elapsed < 0.05f)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    src.volume = Mathf.Lerp(startVol, 0f, elapsed / 0.05f);
+                    yield return null;
+                }
+                src.Stop();
+                src.volume = startVol;
+            }
         }
 
         // --- Danger Warning (proximity-based looping) ---
