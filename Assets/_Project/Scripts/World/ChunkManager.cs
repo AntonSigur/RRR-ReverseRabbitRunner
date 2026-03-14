@@ -36,8 +36,8 @@ namespace ReverseRabbitRunner.World
         [SerializeField] private int platformStartChunk = 5;
         [SerializeField] private float platformChance = 0.35f;
         [SerializeField] private float platformHeight = 1.0f;
-        [SerializeField] private int platformMinLength = 8;
-        [SerializeField] private int platformMaxLength = 12;
+        [SerializeField] private int platformMinLength = 30;
+        [SerializeField] private int platformMaxLength = 50;
 
         // Public stats for HUD
         public float TotalDistance { get; private set; }
