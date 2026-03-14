@@ -32,6 +32,14 @@ namespace ReverseRabbitRunner.World
         [SerializeField] private float obstacleRampRate = 0.5f;
         [SerializeField] private float minObstacleCarrotSpacing = 2f;
 
+        [Header("Platform Settings")]
+        [SerializeField] private int platformStartChunk = 5;
+        [SerializeField] private float platformChance = 0.35f;
+        [SerializeField] private float platformHeight = 1.0f;
+        [SerializeField] private int platformMinLength = 8;
+        [SerializeField] private int platformMaxLength = 12;
+        [SerializeField] private int platformBonusCarrots = 10;
+
         // Public stats for HUD
         public float TotalDistance { get; private set; }
         public int CurrentChunkIndex { get; private set; }
@@ -49,6 +57,10 @@ namespace ReverseRabbitRunner.World
         private Material obstacleFencePostMat;
         private Material obstacleScarecrowBodyMat;
         private Material obstacleScarecrowHatMat;
+        private Material platformBedMat;
+        private Material platformFrameMat;
+        private Material platformWheelMat;
+        private Material platformCabMat;
 
         // Theme definitions
         public enum ChunkTheme { Concrete, SnowMud, Grass }
@@ -190,6 +202,9 @@ namespace ReverseRabbitRunner.World
 
             // Obstacles (after warm-up chunks)
             SpawnObstaclesInChunk(chunkRoot.transform, chunkStartZ, themeIndex - 1);
+
+            // Platform bonus (tractor flatbed with carrot jackpot)
+            SpawnPlatformInChunk(chunkRoot.transform, chunkStartZ, themeIndex - 1);
 
             activeChunks.Add(new ChunkData
             {
@@ -343,22 +358,24 @@ namespace ReverseRabbitRunner.World
             obj.name = "FarmCrate";
             obj.tag = "Obstacle";
             obj.transform.parent = parent;
-            obj.transform.position = position + new Vector3(0, 0.25f, 0);
-            obj.transform.localScale = new Vector3(0.8f, 0.5f, 0.8f);
+            obj.transform.position = position + new Vector3(0, 0.45f, 0);
+            obj.transform.localScale = new Vector3(1.4f, 0.9f, 1.4f);
             obj.GetComponent<Renderer>().material = obstacleCrateMat;
             obj.GetComponent<Collider>().isTrigger = true;
         }
 
         private void CreateHayBale(Transform parent, Vector3 position)
         {
-            var obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var obj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             obj.name = "HayBale";
             obj.tag = "Obstacle";
             obj.transform.parent = parent;
-            obj.transform.position = position + new Vector3(0, 0.25f, 0);
-            obj.transform.localScale = new Vector3(1.2f, 0.5f, 0.6f);
+            obj.transform.position = position + new Vector3(0, 0.45f, 0);
+            obj.transform.localScale = new Vector3(1.2f, 0.45f, 1.2f);
             obj.GetComponent<Renderer>().material = obstacleHayMat;
-            obj.GetComponent<Collider>().isTrigger = true;
+            Object.DestroyImmediate(obj.GetComponent<Collider>());
+            var col = obj.AddComponent<BoxCollider>();
+            col.isTrigger = true;
         }
 
         private void CreateFencePost(Transform parent, Vector3 position)
@@ -419,6 +436,161 @@ namespace ReverseRabbitRunner.World
             col.center = new Vector3(0, 0.9f, 0);
             col.size = new Vector3(1.2f, 1.8f, 0.4f);
             col.isTrigger = true;
+        }
+
+        // ── Platform (Tractor Flatbed) ──────────────────────────────
+
+        private void SpawnPlatformInChunk(Transform parent, float chunkStartZ, int chunkIndex)
+        {
+            if (chunkIndex < platformStartChunk) return;
+            if (Random.value > platformChance) return;
+
+            if (platformBedMat == null)
+            {
+                platformBedMat = MakeMat(new Color(0.35f, 0.35f, 0.38f));
+                platformFrameMat = MakeMat(new Color(0.6f, 0.15f, 0.1f));
+                platformWheelMat = MakeMat(new Color(0.1f, 0.1f, 0.1f));
+                platformCabMat = MakeMat(new Color(0.2f, 0.45f, 0.15f));
+            }
+
+            int lane = Random.Range(0, maxLanes);
+            float xPos = (lane - maxLanes / 2) * laneWidth;
+            int length = Random.Range(platformMinLength, platformMaxLength + 1);
+
+            float zStart = chunkStartZ - chunkLength * 0.3f;
+            Vector3 pos = new Vector3(xPos, 0f, zStart);
+
+            CreateTractorFlatbed(parent, pos, length);
+
+            // Remove ground-level carrots that overlap with the platform
+            float zEnd = zStart - length;
+            var toRemove = new List<Transform>();
+            foreach (Transform child in parent)
+            {
+                if (child.CompareTag("Carrot") &&
+                    Mathf.Abs(child.position.x - xPos) < laneWidth * 0.6f &&
+                    child.position.z <= zStart + 1f && child.position.z >= zEnd - 1f &&
+                    child.position.y < platformHeight)
+                {
+                    toRemove.Add(child);
+                }
+            }
+            foreach (var t in toRemove) Object.DestroyImmediate(t.gameObject);
+        }
+
+        private void CreateTractorFlatbed(Transform parent, Vector3 position, int length)
+        {
+            var root = new GameObject("TractorFlatbed");
+            root.transform.parent = parent;
+            root.transform.position = position;
+
+            float bedWidth = 2.8f;
+            float bedThick = 0.15f;
+            float bedY = platformHeight;
+            float halfLen = length * 0.5f;
+
+            // Bed — solid collider, rabbit walks on this
+            var bed = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bed.name = "Bed";
+            bed.transform.parent = root.transform;
+            bed.transform.localPosition = new Vector3(0, bedY, -halfLen);
+            bed.transform.localScale = new Vector3(bedWidth, bedThick, length);
+            bed.GetComponent<Renderer>().material = platformBedMat;
+
+            // Frame under the bed
+            var frame = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            frame.name = "Frame";
+            frame.transform.parent = root.transform;
+            frame.transform.localPosition = new Vector3(0, bedY * 0.45f, -halfLen);
+            frame.transform.localScale = new Vector3(bedWidth - 0.4f, bedY * 0.75f, length - 0.6f);
+            Object.DestroyImmediate(frame.GetComponent<Collider>());
+            frame.GetComponent<Renderer>().material = platformFrameMat;
+
+            // 4 wheels at corners
+            float wheelR = 0.4f;
+            float wheelT = 0.2f;
+            float wxOff = bedWidth * 0.5f - 0.1f;
+            Vector3[] wp = {
+                new( wxOff, wheelR, -0.5f),          new(-wxOff, wheelR, -0.5f),
+                new( wxOff, wheelR, -(length-0.5f)),  new(-wxOff, wheelR, -(length-0.5f))
+            };
+            for (int i = 0; i < 4; i++)
+            {
+                var wheel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                wheel.name = $"Wheel_{i}";
+                wheel.transform.parent = root.transform;
+                wheel.transform.localPosition = wp[i];
+                wheel.transform.localScale = new Vector3(wheelR * 2, wheelT, wheelR * 2);
+                wheel.transform.localRotation = Quaternion.Euler(0, 0, 90);
+                Object.DestroyImmediate(wheel.GetComponent<Collider>());
+                wheel.GetComponent<Renderer>().material = platformWheelMat;
+            }
+
+            // Cab at far end (-Z)
+            float cabH = 1.0f;
+            float cabD = 1.5f;
+            var cab = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cab.name = "Cab";
+            cab.transform.parent = root.transform;
+            cab.transform.localPosition = new Vector3(0, bedY + cabH * 0.5f + bedThick * 0.5f,
+                -length + cabD * 0.5f);
+            cab.transform.localScale = new Vector3(bedWidth * 0.8f, cabH, cabD);
+            Object.DestroyImmediate(cab.GetComponent<Collider>());
+            cab.GetComponent<Renderer>().material = platformCabMat;
+
+            // Exhaust pipe
+            var exhaust = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            exhaust.name = "Exhaust";
+            exhaust.transform.parent = root.transform;
+            exhaust.transform.localPosition = new Vector3(bedWidth * 0.3f,
+                bedY + cabH + 0.3f, -length + cabD * 0.3f);
+            exhaust.transform.localScale = new Vector3(0.12f, 0.3f, 0.12f);
+            Object.DestroyImmediate(exhaust.GetComponent<Collider>());
+            exhaust.GetComponent<Renderer>().material = platformWheelMat;
+
+            // Front bumper trigger — stumble if rabbit walks into it at ground level
+            var bumper = new GameObject("FrontBumper");
+            bumper.tag = "Obstacle";
+            bumper.transform.parent = root.transform;
+            bumper.transform.localPosition = Vector3.zero;
+            var bumperCol = bumper.AddComponent<BoxCollider>();
+            bumperCol.center = new Vector3(0, bedY * 0.5f, 0.3f);
+            bumperCol.size = new Vector3(bedWidth, bedY, 0.5f);
+            bumperCol.isTrigger = true;
+
+            // ── Bonus carrots on top! 🥕🥕🥕 ──
+            Material carrotMat = MakeMat(new Color(1f, 0.5f, 0.05f));
+            Material leavesMat = MakeMat(new Color(0.1f, 0.6f, 0.1f));
+            float carrotY = bedY + bedThick * 0.5f + 0.44f;
+            float usableLen = length - cabD - 1.5f;
+            int rows = platformBonusCarrots / 2;
+            float spacing = usableLen / Mathf.Max(1, rows - 1);
+
+            for (int i = 0; i < platformBonusCarrots; i++)
+            {
+                float xOff = (i % 2 == 0) ? -0.6f : 0.6f;
+                float zOff = -1.0f - (i / 2) * spacing;
+
+                var carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                carrot.name = "Carrot";
+                carrot.tag = "Carrot";
+                carrot.transform.parent = parent;
+                carrot.transform.position = position + new Vector3(xOff, carrotY, zOff);
+                carrot.transform.localScale = new Vector3(0.34f, 0.68f, 0.34f);
+                carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);
+
+                var leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                leaves.name = "Leaves";
+                leaves.transform.parent = carrot.transform;
+                leaves.transform.localPosition = new Vector3(0, -0.7f, 0);
+                leaves.transform.localScale = new Vector3(2f, 0.3f, 2f);
+                Object.DestroyImmediate(leaves.GetComponent<Collider>());
+                leaves.GetComponent<Renderer>().material = leavesMat;
+
+                carrot.GetComponent<Renderer>().material = carrotMat;
+                carrot.GetComponent<Collider>().isTrigger = true;
+                carrot.AddComponent<CarrotBob>();
+            }
         }
 
         private void DespawnOldestChunk()
