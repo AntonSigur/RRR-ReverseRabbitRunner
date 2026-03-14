@@ -222,6 +222,16 @@ namespace ReverseRabbitRunner.Player
             if (jumpPressed && controller.isGrounded)
                 Jump();
 
+            // Debug: Shift+B = spawn baby rabbits instantly
+            #if UNITY_EDITOR
+            if (Keyboard.current != null &&
+                Keyboard.current.leftShiftKey.isPressed &&
+                Keyboard.current.bKey.wasPressedThisFrame)
+            {
+                SpawnDebugBabies();
+            }
+            #endif
+
             // Touch swipe (using Touchscreen from Input System)
             if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
             {
@@ -237,6 +247,26 @@ namespace ReverseRabbitRunner.Player
             Core.AudioManager.Instance?.PlayJump();
             Debug.Log($"[Jump] force={jumpForce} speedDebt={speedDebt:F1}");
         }
+
+        #if UNITY_EDITOR
+        private void SpawnDebugBabies()
+        {
+            // Kill any existing babies first
+            foreach (var baby in new System.Collections.Generic.List<PowerUps.BabyRabbit>(PowerUps.BabyRabbit.ActiveBabies))
+                if (baby != null) Destroy(baby.gameObject);
+            PowerUps.BabyRabbit.ActiveBabies.Clear();
+
+            var farmer = Object.FindFirstObjectByType<Enemies.FarmerController>();
+            var urpLit = Shader.Find("Universal Render Pipeline/Lit");
+
+            for (int lane = 0; lane < laneCount; lane++)
+            {
+                PowerUps.BabyRabbit.CreateBabyRabbit(
+                    lane, laneWidth, laneCount, this, farmer, 1.5f + lane * 0.4f, urpLit);
+            }
+            Debug.Log("[Debug] Shift+B: Spawned baby rabbits!");
+        }
+        #endif
 
         private void UpdateBodyTilt()
         {
