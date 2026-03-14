@@ -38,7 +38,6 @@ namespace ReverseRabbitRunner.World
         [SerializeField] private float platformHeight = 1.0f;
         [SerializeField] private int platformMinLength = 8;
         [SerializeField] private int platformMaxLength = 12;
-        [SerializeField] private int platformBonusCarrots = 10;
 
         // Public stats for HUD
         public float TotalDistance { get; private set; }
@@ -462,13 +461,12 @@ namespace ReverseRabbitRunner.World
 
             CreateTractorFlatbed(parent, pos, length);
 
-            // Remove ground-level carrots that overlap with the platform
+            // Remove ALL ground-level carrots in the platform zone (all lanes)
             float zEnd = zStart - length;
             var toRemove = new List<Transform>();
             foreach (Transform child in parent)
             {
                 if (child.CompareTag("Carrot") &&
-                    Mathf.Abs(child.position.x - xPos) < laneWidth * 0.6f &&
                     child.position.z <= zStart + 1f && child.position.z >= zEnd - 1f &&
                     child.position.y < platformHeight)
                 {
@@ -558,38 +556,39 @@ namespace ReverseRabbitRunner.World
             bumperCol.size = new Vector3(bedWidth, bedY, 0.5f);
             bumperCol.isTrigger = true;
 
-            // ── Bonus carrots on top! 🥕🥕🥕 ──
+            // ── Packed carrot cargo! 🥕🥕🥕 ──
+            // Dense rows filling the entire flatbed — the wagon IS the carrot source
             Material carrotMat = MakeMat(new Color(1f, 0.5f, 0.05f));
             Material leavesMat = MakeMat(new Color(0.1f, 0.6f, 0.1f));
             float carrotY = bedY + bedThick * 0.5f + 0.44f;
-            float usableLen = length - cabD - 1.5f;
-            int rows = platformBonusCarrots / 2;
-            float spacing = usableLen / Mathf.Max(1, rows - 1);
+            float usableLen = length - cabD - 1.0f;
+            float carrotSpaceZ = 1.0f;   // one carrot every 1 unit along length
+            float[] xOffsets = { -0.8f, 0f, 0.8f }; // 3 columns across the bed
 
-            for (int i = 0; i < platformBonusCarrots; i++)
+            for (float z = -0.8f; z > -usableLen; z -= carrotSpaceZ)
             {
-                float xOff = (i % 2 == 0) ? -0.6f : 0.6f;
-                float zOff = -1.0f - (i / 2) * spacing;
+                foreach (float xOff in xOffsets)
+                {
+                    var carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    carrot.name = "Carrot";
+                    carrot.tag = "Carrot";
+                    carrot.transform.parent = parent;
+                    carrot.transform.position = position + new Vector3(xOff, carrotY, z);
+                    carrot.transform.localScale = new Vector3(0.34f, 0.68f, 0.34f);
+                    carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);
 
-                var carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                carrot.name = "Carrot";
-                carrot.tag = "Carrot";
-                carrot.transform.parent = parent;
-                carrot.transform.position = position + new Vector3(xOff, carrotY, zOff);
-                carrot.transform.localScale = new Vector3(0.34f, 0.68f, 0.34f);
-                carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);
+                    var leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    leaves.name = "Leaves";
+                    leaves.transform.parent = carrot.transform;
+                    leaves.transform.localPosition = new Vector3(0, -0.7f, 0);
+                    leaves.transform.localScale = new Vector3(2f, 0.3f, 2f);
+                    Object.DestroyImmediate(leaves.GetComponent<Collider>());
+                    leaves.GetComponent<Renderer>().material = leavesMat;
 
-                var leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                leaves.name = "Leaves";
-                leaves.transform.parent = carrot.transform;
-                leaves.transform.localPosition = new Vector3(0, -0.7f, 0);
-                leaves.transform.localScale = new Vector3(2f, 0.3f, 2f);
-                Object.DestroyImmediate(leaves.GetComponent<Collider>());
-                leaves.GetComponent<Renderer>().material = leavesMat;
-
-                carrot.GetComponent<Renderer>().material = carrotMat;
-                carrot.GetComponent<Collider>().isTrigger = true;
-                carrot.AddComponent<CarrotBob>();
+                    carrot.GetComponent<Renderer>().material = carrotMat;
+                    carrot.GetComponent<Collider>().isTrigger = true;
+                    carrot.AddComponent<CarrotBob>();
+                }
             }
         }
 
