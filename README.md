@@ -81,8 +81,9 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 🦘 Jump mechanic (Space) — clear obstacles and collect mid-air carrots
 - 🌍 Chunk-based infinite world with 3 themed biomes (Concrete, Snow+Mud, Grass)
 - 🔄 Origin shifting for unlimited distance without floating-point issues
-- 🚧 4 obstacle types (short hurdles, tall barriers, wide fences, moving hazards) with stumble mechanic
+- 🚧 4 obstacle types (farm crates, round hay bales, fence posts, scarecrows) with stumble mechanic
 - 📈 Difficulty ramp — obstacles increase, farmer gets faster over time
+- 🚜 Tractor flatbed platforms — jump on top for a carrot jackpot (~100+ bonus carrots!)
 - 💀 Dramatic 7-stage cinematic death sequence (orbit camera, blood/carrot particles, fork stab)
 - 🔊 Full SFX system — 14 AI-generated sound effects (jump, land, collect, stumble, death, game over, danger warning, etc.)
 - 🎵 Music player — 32 AI-generated tracks with shuffled playback and crossfade transitions
@@ -94,7 +95,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 ### What's Coming 🚧
 
 - [ ] Power-up implementations (Birth / Wing / Dirty carrots)
-- [ ] Dynamic lane layouts per chunk theme
+- [ ] More platform types (hay bale row, stone wall, log pile)
 - [ ] Character model upgrades (goodbye, primitive art)
 - [ ] Animations (running, jumping, stumble, farmer rage)
 - [ ] Mobile touch input polish
