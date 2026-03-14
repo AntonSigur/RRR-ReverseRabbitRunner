@@ -53,6 +53,9 @@ namespace ReverseRabbitRunner.Player
         private float lastStumbleTime = -100f;
         private float stumbleShakeTimer;
 
+        /// <summary>Current forward speed (accounts for speed debt from jumps/stumbles).</summary>
+        public float CurrentSpeed => Mathf.Max(baseSpeed - speedDebt, 2f);
+
         // Input
         private InputAction moveAction;
         private InputAction jumpAction;
@@ -386,7 +389,9 @@ namespace ReverseRabbitRunner.Player
             }
             else if (other.CompareTag("PowerUp"))
             {
-                // PowerUp handling delegated to individual PowerUp scripts
+                var powerUp = other.GetComponent<PowerUps.PowerUpBase>();
+                if (powerUp != null)
+                    powerUp.Collect(this);
             }
         }
     }

@@ -39,6 +39,10 @@ namespace ReverseRabbitRunner.World
         [SerializeField] private int platformMinLength = 30;
         [SerializeField] private int platformMaxLength = 50;
 
+        [Header("Power-Up Settings")]
+        [SerializeField] private int powerUpStartChunk = 6;
+        [SerializeField] private float birthCarrotChance = 0.25f;
+
         // Public stats for HUD
         public float TotalDistance { get; private set; }
         public int CurrentChunkIndex { get; private set; }
@@ -204,6 +208,9 @@ namespace ReverseRabbitRunner.World
 
             // Platform bonus (tractor flatbed with carrot jackpot)
             SpawnPlatformInChunk(chunkRoot.transform, chunkStartZ, themeIndex - 1);
+
+            // Power-ups
+            SpawnPowerUpsInChunk(chunkRoot.transform, chunkStartZ, themeIndex - 1);
 
             activeChunks.Add(new ChunkData
             {
@@ -590,6 +597,54 @@ namespace ReverseRabbitRunner.World
                     carrot.AddComponent<CarrotBob>();
                 }
             }
+        }
+
+        // ── Power-Up Spawning ──────────────────────────────────────
+
+        private Material powerUpBirthMat;
+        private Material powerUpLeavesMat;
+
+        private void SpawnPowerUpsInChunk(Transform parent, float chunkStartZ, int chunkIndex)
+        {
+            if (chunkIndex < powerUpStartChunk) return;
+
+            // Don't spawn if babies are already active
+            if (PowerUps.BabyRabbit.ActiveBabies.Count > 0) return;
+
+            if (Random.value > birthCarrotChance) return;
+
+            if (powerUpBirthMat == null)
+            {
+                powerUpBirthMat = MakeMat(new Color(1f, 0.45f, 0.85f)); // hot pink
+                powerUpLeavesMat = MakeMat(new Color(0.9f, 0.3f, 0.6f)); // pink leaves
+            }
+
+            int lane = Random.Range(0, maxLanes);
+            float xPos = (lane - maxLanes / 2) * laneWidth;
+            float zPos = chunkStartZ - Random.Range(10f, chunkLength - 10f);
+
+            // Special carrot visual: pink, slightly larger, with glow-like leaves
+            var carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            carrot.name = "BirthCarrot";
+            carrot.tag = "PowerUp";
+            carrot.transform.parent = parent;
+            carrot.transform.position = new Vector3(xPos, 0.55f, zPos);
+            carrot.transform.localScale = new Vector3(0.45f, 0.85f, 0.45f);
+            carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);
+            carrot.GetComponent<Renderer>().material = powerUpBirthMat;
+            carrot.GetComponent<Collider>().isTrigger = true;
+
+            // Big flashy leaves
+            var leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            leaves.name = "Leaves";
+            leaves.transform.parent = carrot.transform;
+            leaves.transform.localPosition = new Vector3(0, -0.7f, 0);
+            leaves.transform.localScale = new Vector3(2.5f, 0.4f, 2.5f);
+            Object.DestroyImmediate(leaves.GetComponent<Collider>());
+            leaves.GetComponent<Renderer>().material = powerUpLeavesMat;
+
+            carrot.AddComponent<CarrotBob>();
+            carrot.AddComponent<PowerUps.BirthCarrot>();
         }
 
         private void DespawnOldestChunk()
