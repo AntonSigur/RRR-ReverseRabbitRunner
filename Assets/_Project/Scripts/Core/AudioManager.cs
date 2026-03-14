@@ -13,6 +13,10 @@ namespace ReverseRabbitRunner.Core
 
         [Header("SFX Clips")]
         [SerializeField] private AudioClip collectCarrot;
+        [SerializeField] private AudioClip collectSpecial1;
+        [SerializeField] private AudioClip collectSpecial2;
+        [SerializeField] private AudioClip collectSpecial3;
+        [SerializeField] private AudioClip collectSpecial4;
         [SerializeField] private AudioClip jump;
         [SerializeField] private AudioClip land;
         [SerializeField] private AudioClip stumbleSmall;
@@ -27,12 +31,19 @@ namespace ReverseRabbitRunner.Core
         [SerializeField, Range(0f, 1f)] private float sfxVolume = 1f;
         [SerializeField, Range(0f, 1f)] private float masterVolume = 1f;
 
+        [Header("Collect SFX")]
+        [SerializeField, Range(0f, 1f)] private float collectVolume = 0.75f;
+        [SerializeField] private int collectSourceCount = 6;
+        [SerializeField] private float collectDuckFactor = 0.6f; // previous collect volume multiplied by this
+
         [Header("Audio Sources")]
         [SerializeField] private int poolSize = 4;
 
         private AudioSource[] sourcePool;
         private int nextSource;
-        private AudioSource dangerSource; // looping danger sound
+        private AudioSource dangerSource;
+        private AudioSource[] collectSources; // dedicated pool for overlapping collects
+        private int nextCollectSource;
 
         // Event wiring state
         private Player.RabbitController cachedRabbit;
@@ -48,7 +59,7 @@ namespace ReverseRabbitRunner.Core
             }
             Instance = this;
 
-            // Create audio source pool
+            // Create audio source pool (general SFX)
             sourcePool = new AudioSource[poolSize];
             for (int i = 0; i < poolSize; i++)
             {
@@ -56,6 +67,16 @@ namespace ReverseRabbitRunner.Core
                 src.playOnAwake = false;
                 src.spatialBlend = 0f; // 2D
                 sourcePool[i] = src;
+            }
+
+            // Dedicated overlapping pool for collect sounds
+            collectSources = new AudioSource[collectSourceCount];
+            for (int i = 0; i < collectSourceCount; i++)
+            {
+                var src = gameObject.AddComponent<AudioSource>();
+                src.playOnAwake = false;
+                src.spatialBlend = 0f;
+                collectSources[i] = src;
             }
 
             // Dedicated looping source for danger warning
@@ -75,6 +96,10 @@ namespace ReverseRabbitRunner.Core
         private void LoadClipsFromResources()
         {
             if (collectCarrot == null) collectCarrot = Resources.Load<AudioClip>("SFX/sfx_collect_carrot");
+            if (collectSpecial1 == null) collectSpecial1 = Resources.Load<AudioClip>("SFX/sfx_collect_special1");
+            if (collectSpecial2 == null) collectSpecial2 = Resources.Load<AudioClip>("SFX/sfx_collect_special2");
+            if (collectSpecial3 == null) collectSpecial3 = Resources.Load<AudioClip>("SFX/sfx_collect_special3");
+            if (collectSpecial4 == null) collectSpecial4 = Resources.Load<AudioClip>("SFX/sfx_collect_special4");
             if (jump == null) jump = Resources.Load<AudioClip>("SFX/sfx_jump");
             if (land == null) land = Resources.Load<AudioClip>("SFX/sfx_land");
             if (stumbleSmall == null) stumbleSmall = Resources.Load<AudioClip>("SFX/sfx_stumble_small");
@@ -137,8 +162,48 @@ namespace ReverseRabbitRunner.Core
 
         private void OnCollectCarrot(GameObject carrot)
         {
-            // Carrot collect uses a short burst (only first ~0.5s of the clip)
-            PlaySFXTrimmed(collectCarrot, 0.8f, 0.5f);
+            PlayCollectOverlapping(collectCarrot);
+        }
+
+        /// <summary>
+        /// Play a special carrot collect sound (for power-up carrots).
+        /// </summary>
+        public void PlayCollectSpecial(int index)
+        {
+            var clip = index switch
+            {
+                1 => collectSpecial1,
+                2 => collectSpecial2,
+                3 => collectSpecial3,
+                4 => collectSpecial4,
+                _ => collectSpecial1
+            };
+            PlayCollectOverlapping(clip);
+        }
+
+        /// <summary>
+        /// Overlapping collect: duck all currently playing collect sources, then play new one.
+        /// This creates a smooth layered sound when picking up many carrots quickly.
+        /// </summary>
+        private void PlayCollectOverlapping(AudioClip clip)
+        {
+            if (clip == null) return;
+
+            // Duck all currently playing collect sources
+            for (int i = 0; i < collectSources.Length; i++)
+            {
+                if (collectSources[i].isPlaying)
+                    collectSources[i].volume *= collectDuckFactor;
+            }
+
+            // Play new collect on next source in pool
+            var src = collectSources[nextCollectSource];
+            nextCollectSource = (nextCollectSource + 1) % collectSources.Length;
+
+            src.clip = clip;
+            src.volume = collectVolume * sfxVolume * masterVolume;
+            src.pitch = 1f + Random.Range(-0.08f, 0.08f);
+            src.Play();
         }
 
         private void OnStumble(float penalty)
