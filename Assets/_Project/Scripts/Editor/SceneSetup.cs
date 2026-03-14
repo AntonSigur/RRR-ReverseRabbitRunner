@@ -701,6 +701,11 @@ namespace ReverseRabbitRunner.Editor
             audioObj.transform.parent = managers.transform;
             audioObj.AddComponent<Core.AudioManager>();
 
+            // Music player with crossfade
+            GameObject musicObj = new GameObject("MusicPlayer");
+            musicObj.transform.parent = managers.transform;
+            musicObj.AddComponent<Core.MusicPlayer>();
+
             return managers;
         }
 
