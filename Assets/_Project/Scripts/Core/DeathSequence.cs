@@ -205,6 +205,7 @@ namespace ReverseRabbitRunner.Core
             // Spawn particles on impact!
             Debug.Log($"[DeathSequence] STAB! Spawning {particleBurstCount} particles at {rabbitTransform.position + Vector3.up * 0.5f} (blood={UseBloodParticles})");
             SpawnDeathParticles(rabbitTransform.position + Vector3.up * 0.5f);
+            AudioManager.Instance?.PlayDeathStab();
 
             // === STAGE 4: Rabbit falls, farmer steps back ===
             elapsed = 0f;
@@ -257,6 +258,7 @@ namespace ReverseRabbitRunner.Core
             isPlaying = false;
             fadeAlpha = 0f; // Clear black overlay so GameHUD game over screen is visible
 
+            AudioManager.Instance?.PlayGameOver();
             GameManager.Instance?.GameOver();
         }
 

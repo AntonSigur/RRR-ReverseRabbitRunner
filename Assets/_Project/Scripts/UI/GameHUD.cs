@@ -238,17 +238,20 @@ namespace ReverseRabbitRunner.UI
 
                     if (GUI.Button(new Rect(btnX, Screen.height * 0.38f, btnW, btnH), "▶  RESUME", buttonStyle))
                     {
+                        Core.AudioManager.Instance?.PlayMenuClick();
                         isPaused = false;
                         Time.timeScale = 1f;
                     }
 
                     if (GUI.Button(new Rect(btnX, Screen.height * 0.48f, btnW, btnH), "⚙  SETTINGS", buttonStyle))
                     {
+                        Core.AudioManager.Instance?.PlayMenuClick();
                         showSettings = true;
                     }
 
                     if (GUI.Button(new Rect(btnX, Screen.height * 0.58f, btnW, btnH), "✕  QUIT TO MENU", buttonStyle))
                     {
+                        Core.AudioManager.Instance?.PlayMenuClick();
                         isPaused = false;
                         Core.GameManager.Instance?.ReturnToMenu();
                     }
@@ -280,17 +283,41 @@ namespace ReverseRabbitRunner.UI
                     float vol = GUI.HorizontalSlider(
                         new Rect(cx - 150, Screen.height * 0.60f, 300, 20),
                         AudioListener.volume, 0f, 1f);
-                    AudioListener.volume = vol;
-                    PlayerPrefs.SetFloat("MasterVolume", vol);
+                    if (Core.AudioManager.Instance != null)
+                        Core.AudioManager.Instance.MasterVolume = vol;
+                    else
+                    {
+                        AudioListener.volume = vol;
+                        PlayerPrefs.SetFloat("MasterVolume", vol);
+                    }
+
+                    // SFX Volume
+                    GUI.Label(new Rect(0, Screen.height * 0.63f, Screen.width, 30), "SFX Volume", infoStyle);
+                    float sfxVol = Core.AudioManager.Instance != null ? Core.AudioManager.Instance.SFXVolume : 1f;
+                    sfxVol = GUI.HorizontalSlider(
+                        new Rect(cx - 150, Screen.height * 0.67f, 300, 20),
+                        sfxVol, 0f, 1f);
+                    if (Core.AudioManager.Instance != null)
+                        Core.AudioManager.Instance.SFXVolume = sfxVol;
+
+                    // Music Volume
+                    GUI.Label(new Rect(0, Screen.height * 0.70f, Screen.width, 30), "Music Volume", infoStyle);
+                    float musicVol = Core.MusicPlayer.Instance != null ? Core.MusicPlayer.Instance.Volume : 0.35f;
+                    musicVol = GUI.HorizontalSlider(
+                        new Rect(cx - 150, Screen.height * 0.74f, 300, 20),
+                        musicVol, 0f, 1f);
+                    if (Core.MusicPlayer.Instance != null)
+                        Core.MusicPlayer.Instance.Volume = musicVol;
 
                     // Death particle mode toggle
                     infoStyle.fontSize = 22;
-                    GUI.Label(new Rect(0, Screen.height * 0.64f, Screen.width, 30), "Death Effect", infoStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.78f, Screen.width, 30), "Death Effect", infoStyle);
                     infoStyle.fontSize = 18;
                     bool useBlood = Core.DeathSequence.UseBloodParticles;
                     string modeLabel = useBlood ? "🩸 Blood (click to change)" : "🥕 Carrots (click to change)";
-                    if (GUI.Button(new Rect(cx - 150, Screen.height * 0.685f, 300, 35), modeLabel, buttonStyle))
+                    if (GUI.Button(new Rect(cx - 150, Screen.height * 0.825f, 300, 35), modeLabel, buttonStyle))
                     {
+                        Core.AudioManager.Instance?.PlayMenuClick();
                         Core.DeathSequence.UseBloodParticles = !useBlood;
                     }
 
@@ -300,8 +327,9 @@ namespace ReverseRabbitRunner.UI
                         buttonStyle.normal.textColor = Color.white;
                     }
                     float btnW = 200, btnH = 45;
-                    if (GUI.Button(new Rect(cx - btnW / 2, Screen.height * 0.70f, btnW, btnH), "← BACK", buttonStyle))
+                    if (GUI.Button(new Rect(cx - btnW / 2, Screen.height * 0.90f, btnW, btnH), "← BACK", buttonStyle))
                     {
+                        Core.AudioManager.Instance?.PlayMenuClick();
                         showSettings = false;
                     }
                     infoStyle.alignment = TextAnchor.UpperLeft;
