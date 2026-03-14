@@ -696,6 +696,11 @@ namespace ReverseRabbitRunner.Editor
             deathSeqObj.transform.parent = managers.transform;
             deathSeqObj.AddComponent<Core.DeathSequence>();
 
+            // Audio manager with SFX clips
+            GameObject audioObj = new GameObject("AudioManager");
+            audioObj.transform.parent = managers.transform;
+            audioObj.AddComponent<Core.AudioManager>();
+
             return managers;
         }
 

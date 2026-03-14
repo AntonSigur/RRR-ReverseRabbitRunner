@@ -234,6 +234,7 @@ namespace ReverseRabbitRunner.Player
             verticalVelocity = jumpForce;
             isJumping = true;
             speedDebt += jumpSpeedPenalty;
+            Core.AudioManager.Instance?.PlayJump();
             Debug.Log($"[Jump] force={jumpForce} speedDebt={speedDebt:F1}");
         }
 
@@ -268,6 +269,7 @@ namespace ReverseRabbitRunner.Player
             {
                 currentLane--;
                 UpdateTargetPosition();
+                Core.AudioManager.Instance?.PlayLaneSwitch();
             }
         }
 
@@ -277,6 +279,7 @@ namespace ReverseRabbitRunner.Player
             {
                 currentLane++;
                 UpdateTargetPosition();
+                Core.AudioManager.Instance?.PlayLaneSwitch();
             }
         }
 
