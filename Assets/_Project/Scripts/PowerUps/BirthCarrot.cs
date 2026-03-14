@@ -8,9 +8,6 @@ namespace ReverseRabbitRunner.PowerUps
     /// </summary>
     public class BirthCarrot : PowerUpBase
     {
-        [Header("Birth Carrot")]
-        [SerializeField] private float laneWidth = 3f;
-        [SerializeField] private int laneCount = 5;
 
         protected override void Activate(Player.RabbitController rabbit)
         {
@@ -19,20 +16,20 @@ namespace ReverseRabbitRunner.PowerUps
             var farmer = Object.FindFirstObjectByType<Enemies.FarmerController>();
             var urpLit = Shader.Find("Universal Render Pipeline/Lit");
 
-            // Spawn a baby in every lane
-            for (int lane = 0; lane < laneCount; lane++)
+            // Spawn a chaotic swarm of 125 rainbow babies
+            int count = 125;
+            for (int i = 0; i < count; i++)
             {
-                // Stagger them slightly in Z so they don't all spawn on top of each other
-                float zOffset = 1.5f + lane * 0.4f;
+                float zOffset = Random.Range(-5f, 10f);
+                float xStart = Random.Range(-7f, 7f);
+                float speedMult = Random.Range(0.8f, 1.2f);
 
-                BabyRabbit.CreateBabyRabbit(
-                    lane, laneWidth, laneCount,
-                    rabbit, farmer, zOffset, urpLit);
+                BabyRabbit.CreateBabyRabbit(i, rabbit, farmer,
+                    zOffset, xStart, speedMult, urpLit);
             }
 
-            Debug.Log($"[BirthCarrot] Spawned {laneCount} baby rabbits!");
+            Debug.Log($"[BirthCarrot] Spawned {count} chaotic baby rabbits!");
 
-            // Destroy the power-up object after activation
             Destroy(gameObject);
         }
 

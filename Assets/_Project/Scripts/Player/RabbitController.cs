@@ -259,12 +259,16 @@ namespace ReverseRabbitRunner.Player
             var farmer = Object.FindFirstObjectByType<Enemies.FarmerController>();
             var urpLit = Shader.Find("Universal Render Pipeline/Lit");
 
-            for (int lane = 0; lane < laneCount; lane++)
+            int count = 125;
+            for (int i = 0; i < count; i++)
             {
-                PowerUps.BabyRabbit.CreateBabyRabbit(
-                    lane, laneWidth, laneCount, this, farmer, 1.5f + lane * 0.4f, urpLit);
+                float zOffset = Random.Range(-5f, 10f);
+                float xStart = Random.Range(-7f, 7f);
+                float speedMult = Random.Range(0.8f, 1.2f);
+                PowerUps.BabyRabbit.CreateBabyRabbit(i, this, farmer,
+                    zOffset, xStart, speedMult, urpLit);
             }
-            Debug.Log("[Debug] Shift+B: Spawned baby rabbits!");
+            Debug.Log("[Debug] Shift+B: Spawned 125 chaotic baby rabbits!");
         }
         #endif
 
