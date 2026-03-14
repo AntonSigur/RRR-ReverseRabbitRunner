@@ -137,8 +137,8 @@ namespace ReverseRabbitRunner.Core
 
         private void OnCollectCarrot(GameObject carrot)
         {
-            // Carrot collect uses a short burst (only first ~0.3s of the clip)
-            PlaySFXTrimmed(collectCarrot, 0.8f, 0.3f);
+            // Carrot collect uses a short burst (only first ~0.5s of the clip)
+            PlaySFXTrimmed(collectCarrot, 0.8f, 0.5f);
         }
 
         private void OnStumble(float penalty)
@@ -244,8 +244,9 @@ namespace ReverseRabbitRunner.Core
 
             float dist = Vector3.Distance(farmerObj.transform.position, cachedRabbit.transform.position);
 
-            // Fade in danger sound when farmer is within 15 units, full at 5 units
-            float t = Mathf.InverseLerp(15f, 5f, dist);
+            // Fade in danger sound: starts at 4 units, full at 2 units
+            // (farmer's baseDistance is 5, so no sound during normal play)
+            float t = Mathf.InverseLerp(4f, 2f, dist);
             float targetVol = t * sfxVolume * masterVolume * 0.4f;
             dangerSource.volume = Mathf.Lerp(dangerSource.volume, targetVol, Time.deltaTime * 3f);
 
