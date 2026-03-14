@@ -355,11 +355,17 @@ namespace ReverseRabbitRunner.Player
                 float obstacleHeight = other.bounds.size.y;
                 bool isSmall = obstacleHeight < 1.0f;
 
-                // Jumping over a small obstacle clears it
-                if (isJumping && isSmall && !controller.isGrounded)
+                // Height-based jump clearance: if rabbit's feet are above the obstacle, clear it
+                if (isJumping && !controller.isGrounded)
                 {
-                    Destroy(other.gameObject);
-                    return;
+                    float rabbitFeetY = transform.position.y;
+                    float obstacleTopY = other.bounds.max.y;
+
+                    if (rabbitFeetY >= obstacleTopY - 0.2f)
+                    {
+                        if (isSmall) Destroy(other.gameObject);
+                        return;
+                    }
                 }
 
                 // Read obstacle bounds BEFORE disabling the collider
