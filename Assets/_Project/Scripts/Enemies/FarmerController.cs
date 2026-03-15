@@ -150,12 +150,12 @@ namespace ReverseRabbitRunner.Enemies
                 ? Mathf.Sin(Time.time * swaySpeed * 4f) * swayAmount * 3f
                 : Mathf.Sin(Time.time * swaySpeed) * swayAmount;
 
-            // Position farmer
+            // Position farmer (use transform.position, not MovePosition which lags)
             Vector3 farmerPos = new Vector3(
                 currentX + swayOffset,
                 0f,
                 playerTransform.position.z + currentDistance);
-            rb.MovePosition(farmerPos);
+            transform.position = farmerPos;
 
             // Face rabbit
             Vector3 lookDir = playerTransform.position - farmerPos;
@@ -289,7 +289,7 @@ namespace ReverseRabbitRunner.Enemies
             Vector3 catchPos = new Vector3(
                 playerTransform.position.x, 0f,
                 playerTransform.position.z + catchDistance);
-            rb.MovePosition(catchPos);
+            transform.position = catchPos;
 
             Vector3 catchLook = playerTransform.position - transform.position;
             catchLook.y = 0;
