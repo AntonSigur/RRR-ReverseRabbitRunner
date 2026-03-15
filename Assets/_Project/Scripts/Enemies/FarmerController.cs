@@ -98,9 +98,9 @@ namespace ReverseRabbitRunner.Enemies
             col.size = new Vector3(0.8f, 2f, 0.8f);
             col.center = new Vector3(0, 1f, 0);
 
-            // Remove the auto-generated body capsule collider (visual only)
-            var bodyCollider = GetComponentInChildren<CapsuleCollider>();
-            if (bodyCollider != null) Destroy(bodyCollider);
+            // Remove visual-only colliders from children (they cause physics interference)
+            foreach (var childCol in GetComponentsInChildren<Collider>())
+                if (childCol.gameObject != gameObject) Destroy(childCol);
         }
 
         private void Update()
