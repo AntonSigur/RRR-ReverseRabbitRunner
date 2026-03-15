@@ -13,12 +13,20 @@ namespace ReverseRabbitRunner.Player
         [SerializeField] private Vector3 offset = new Vector3(0, 3.5f, -10f);
         [SerializeField] private float smoothSpeed = 8f;
 
+        [Header("Flight Mode")]
+        [SerializeField] private Vector3 flightOffset = new Vector3(0, 5f, 10f);
+        [SerializeField] private Vector3 flightLookOffset = new Vector3(0, 0.5f, -5f);
+
         [Header("Dynamic")]
         [SerializeField] private float speedZoomFactor = 0.02f;
         [SerializeField] private float maxFOVIncrease = 15f;
 
         private Camera cam;
         private float baseFOV;
+        private bool isInFlightMode;
+        private Vector3 normalLookOffset = new Vector3(0, 0.5f, 5f);
+
+        public void SetFlightMode(bool flight) => isInFlightMode = flight;
 
         private void Start()
         {
@@ -36,12 +44,14 @@ namespace ReverseRabbitRunner.Player
         {
             if (target == null) return;
 
-            // Position camera at -Z offset (behind the rabbit's face direction)
-            Vector3 desiredPosition = target.position + offset;
+            // Position camera — swap offset during flight to see path ahead
+            Vector3 currentOffset = isInFlightMode ? flightOffset : offset;
+            Vector3 desiredPosition = target.position + currentOffset;
             transform.position = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
 
-            // Look at the rabbit (and farmer beyond it in +Z direction)
-            Vector3 lookTarget = target.position + new Vector3(0, 0.5f, 5f);
+            // Look target — forward during flight, backward (farmer) normally
+            Vector3 lookOffset = isInFlightMode ? flightLookOffset : normalLookOffset;
+            Vector3 lookTarget = target.position + lookOffset;
             transform.LookAt(lookTarget);
 
             // Speed-based FOV increase

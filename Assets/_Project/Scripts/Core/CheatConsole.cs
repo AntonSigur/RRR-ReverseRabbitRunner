@@ -71,6 +71,8 @@ namespace ReverseRabbitRunner.Core
                 ["score"]   = SetScore,
                 ["farmer"]  = _ => ToggleFarmer(),
                 ["die"]     = _ => TriggerDeath(),
+                ["wing"]    = _ => TriggerWingCarrot(),
+                ["fly"]     = _ => TriggerWingCarrot(),
             };
         }
 
@@ -261,6 +263,7 @@ namespace ReverseRabbitRunner.Core
             Log("score [n]    Set score (no arg = show)", Color.white);
             Log("farmer       Toggle farmer on/off", Color.white);
             Log("die          Trigger instant death", Color.white);
+            Log("wing/fly     Activate Wing-Carrot flight", Color.white);
             Log("clear        Clear console", Color.white);
             Log("help         Show this", Color.white);
         }
@@ -379,6 +382,18 @@ namespace ReverseRabbitRunner.Core
 
             rabbit.Die();
             Log("Rabbit killed!", Color.red);
+        }
+
+        private void TriggerWingCarrot()
+        {
+            var rabbit = FindFirstObjectByType<Player.RabbitController>();
+            if (rabbit == null) { Log("No rabbit found!", Color.red); return; }
+
+            if (rabbit.IsFlying) { Log("Already flying!", Color.yellow); return; }
+
+            var fc = rabbit.gameObject.AddComponent<PowerUps.FlightController>();
+            fc.Initialize(rabbit, 6f, 8f);
+            Log("Wing-Carrot! FLIGHT MODE!", Color.cyan);
         }
     }
 }
