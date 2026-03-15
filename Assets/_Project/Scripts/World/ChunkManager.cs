@@ -633,15 +633,15 @@ namespace ReverseRabbitRunner.World
         {
             if (chunkIndex < powerUpStartChunk) return;
 
-            // Don't spawn if babies are already active or rabbit is flying
-            if (PowerUps.BabyRabbit.ActiveBabies.Count > 0) return;
+            // Don't spawn Birth-Carrot if babies are active; don't spawn Wing-Carrot if flying
+            bool babiesActive = PowerUps.BabyRabbit.ActiveBabies.Count > 0;
             var rabbit = GameObject.FindGameObjectWithTag("Player");
-            if (rabbit != null && rabbit.GetComponent<Player.RabbitController>()?.IsFlying == true) return;
+            bool isFlying = rabbit != null && rabbit.GetComponent<Player.RabbitController>()?.IsFlying == true;
 
             // Roll for which power-up to spawn (mutually exclusive per chunk)
             float roll = Random.value;
-            bool spawnBirth = roll < birthCarrotChance;
-            bool spawnWing = !spawnBirth && roll < birthCarrotChance + wingCarrotChance;
+            bool spawnBirth = !babiesActive && roll < birthCarrotChance;
+            bool spawnWing = !isFlying && !spawnBirth && roll < birthCarrotChance + wingCarrotChance;
 
             if (!spawnBirth && !spawnWing) return;
 
