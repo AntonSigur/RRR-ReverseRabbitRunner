@@ -494,13 +494,21 @@ namespace ReverseRabbitRunner.World
             float bedY = platformHeight;
             float halfLen = length * 0.5f;
 
-            // Bed — solid collider, rabbit walks on this
+            // Bed — visual only, collider replaced with thin walkable surface
             var bed = GameObject.CreatePrimitive(PrimitiveType.Cube);
             bed.name = "Bed";
             bed.transform.parent = root.transform;
             bed.transform.localPosition = new Vector3(0, bedY, -halfLen);
             bed.transform.localScale = new Vector3(bedWidth, bedThick, length);
+            Object.DestroyImmediate(bed.GetComponent<BoxCollider>());
             bed.GetComponent<Renderer>().material = platformBedMat;
+
+            // Thin walkable surface at bed top — no side walls to trap the player
+            var walkSurface = new GameObject("WalkSurface");
+            walkSurface.transform.parent = root.transform;
+            walkSurface.transform.localPosition = new Vector3(0, bedY + bedThick * 0.5f, -halfLen);
+            var walkCol = walkSurface.AddComponent<BoxCollider>();
+            walkCol.size = new Vector3(bedWidth + 0.4f, 0.02f, length);
 
             // Frame under the bed
             var frame = GameObject.CreatePrimitive(PrimitiveType.Cube);
