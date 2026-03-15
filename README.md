@@ -86,6 +86,8 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 📈 Difficulty ramp — obstacles increase, farmer gets faster over time
 - 🚜 Tractor flatbed platforms — jump on top for a carrot jackpot (~100+ bonus carrots!)
 - 🍼 Birth-Carrot power-up — spawns 125 chaotic rainbow baby rabbits that swarm across lanes hoovering up carrots
+- 🪽 Wing-Carrot power-up — backflip into the sky and FLY! Glide forward collecting airborne carrot streams, then backflip home
+- 🤢 Dirty-Carrot power-up — smears mirrors with mud for reduced visibility (difficulty modifier)
 - 💀 Dramatic 7-stage cinematic death sequence (orbit camera, blood/carrot particles, fork stab)
 - 🔊 Full SFX system — 14 AI-generated sound effects (jump, land, collect, stumble, death, game over, danger warning, etc.)
 - 🎵 Music player — 32 AI-generated tracks with shuffled playback and crossfade transitions
@@ -94,15 +96,16 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 🏠 Main Menu scene with Play, Settings, and Quit
 - 📊 HUD showing score, speed, lane, farmer threat, distance, and chunk stats
 - 🎮 In-game cheat console (Shift+F12) with debug commands
+- 🎛️ Debug overlay (F11) — real-time game state monitor (rabbit, farmer, flight, world stats)
+- 🧪 Automated test runner — coroutine-based game logic tests accessible via console
 
 ### What's Coming 🚧
 
-- [ ] More power-ups (Wing-Carrot flight, Dirty-Carrot mirror mud)
 - [ ] More platform types (hay bale row, stone wall, log pile)
 - [ ] Character model upgrades (goodbye, primitive art)
 - [ ] Animations (running, jumping, stumble, farmer rage)
 - [ ] Mobile touch input polish
-- [ ] Leaderboard / high score persistence
+- [ ] Leaderboard system (high score persistence exists via PlayerPrefs, but no global rankings)
 
 ---
 
@@ -138,6 +141,7 @@ git clone git@github.com:AntonSigur/RRR-ReverseRabbitRunner.git
 | `Numpad +/-` | Zoom mirrors |
 | `Numpad 5` | Reset mirrors |
 | `Esc` or `Q` | Pause / Resume |
+| `F11` | Toggle debug overlay |
 | `Shift+3` | Skip music track *(editor only)* |
 | `Shift+4` | Toggle song name overlay *(editor only)* |
 | `Shift+F12` | Open cheat console |
@@ -148,14 +152,22 @@ Open with `Shift+F12` during gameplay:
 
 | Command | Effect |
 |---------|--------|
-| `babies` | Spawn 125 baby rabbits |
-| `kill` | Kill all baby rabbits |
-| `god` | Toggle god mode (invincible) |
-| `speed <n>` | Override rabbit speed |
-| `score <n>` | Set score |
-| `farmer` | Toggle farmer on/off |
-| `die` | Trigger death sequence |
 | `help` | List all commands |
+| `god` | Toggle god mode (invincible) |
+| `speed [n]` | Show or override rabbit speed |
+| `score [n]` | Show or set score |
+| `babies [n]` | Spawn baby rabbits (default 125, max 500) |
+| `baby` | Alias for `babies` |
+| `kill` | Kill all baby rabbits |
+| `farmer` | Toggle farmer on/off |
+| `fstatus` | Dump farmer state (distance, visibility, stumbles, threat) |
+| `fstumble` | Force farmer stumble |
+| `fdist [n]` | Show or set farmer distance |
+| `die` | Trigger death sequence |
+| `wing` / `fly` | Activate Wing-Carrot flight |
+| `test <name>` | Run automated test (`flight`, `farmer`, `stumble`, `distance`, `all`) |
+| `overlay` | Toggle debug overlay (same as F11) |
+| `clear` | Clear console |
 
 ---
 
@@ -165,18 +177,24 @@ Open with `Shift+F12` during gameplay:
 Assets/_Project/
 ├── Scripts/
 │   ├── Core/       → GameManager, ScoreManager, InputManager, AutoStartGame,
-│   │                 AudioManager, MusicPlayer, DeathSequence, CheatConsole
+│   │                 AudioManager, MusicPlayer, DeathSequence, CheatConsole,
+│   │                 DebugOverlay, GameTestRunner
 │   ├── Player/     → RabbitController, MirrorCamera, CameraFollow
 │   ├── World/      → ChunkManager, LaneGenerator, ObstacleSpawner, CarrotBob
 │   ├── Enemies/    → FarmerController, FarmerForkWave
-│   ├── PowerUps/   → BirthCarrot, BabyRabbit, WingCarrot, DirtyCarrot (stubs)
+│   ├── PowerUps/   → BirthCarrot, BabyRabbit, WingCarrot, DirtyCarrot,
+│   │                 FlightController, PowerUpBase
 │   ├── UI/         → GameHUD, MainMenuUI, PauseMenuUI
 │   └── Editor/     → SceneSetup, MainMenuSceneSetup
 ├── Audio/
 │   └── Music/      → Master music library (originals + generated/)
-├── Prefabs/
+├── Animations/
 ├── Materials/
-└── Textures/
+├── Models/
+├── Prefabs/
+├── Shaders/
+├── Textures/
+└── VFX/
 
 Assets/Resources/
 ├── SFX/            → 14 FLAC sound effects (auto-loaded at runtime)
