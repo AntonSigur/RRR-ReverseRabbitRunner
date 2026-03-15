@@ -128,7 +128,7 @@ namespace ReverseRabbitRunner.PowerUps
             isAlive = false;
             ActiveBabies.Remove(this);
 
-            Debug.Log($"[BabyRabbit] Lane {assignedLane} died: {cause}");
+            Debug.Log($"[BabyRabbit] {gameObject.name} died: {cause}");
 
             // Pop effect: scatter body parts
             foreach (Transform child in transform)
