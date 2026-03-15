@@ -44,6 +44,7 @@ namespace ReverseRabbitRunner.Core
                 return;
             }
             Instance = this;
+            DontDestroyOnLoad(gameObject);
 
             // Create two audio sources for crossfading
             sourceA = gameObject.AddComponent<AudioSource>();
