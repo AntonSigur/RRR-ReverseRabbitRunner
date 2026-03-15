@@ -19,9 +19,9 @@ namespace ReverseRabbitRunner.Enemies
         [SerializeField] private float tallObstaclePenaltyDistance = 4f;
 
         [Header("Obstacle Avoidance AI")]
-        [SerializeField] private float lookAheadDistance = 8f;
-        [SerializeField] private float scanInterval = 0.4f;
-        [SerializeField] private float dodgeSuccessRate = 0.65f;
+        [SerializeField] private float lookAheadDistance = 5f;
+        [SerializeField] private float scanInterval = 0.5f;
+        [SerializeField] private float dodgeSuccessRate = 0.40f;
         [SerializeField] private float laneWidth = 3f;
         [SerializeField] private int laneCount = 5;
 
@@ -156,6 +156,20 @@ namespace ReverseRabbitRunner.Enemies
                 0f,
                 playerTransform.position.z + currentDistance);
             transform.position = farmerPos;
+
+            // Manual obstacle proximity check (OnTriggerEnter unreliable with teleporting)
+            if (!isFarmerStumbling && !isCatching)
+            {
+                var hits = Physics.OverlapSphere(farmerPos + Vector3.up, 0.5f);
+                foreach (var hit in hits)
+                {
+                    if (hit.CompareTag("Obstacle"))
+                    {
+                        FarmerStumble();
+                        break;
+                    }
+                }
+            }
 
             // Face rabbit
             Vector3 lookDir = playerTransform.position - farmerPos;
