@@ -58,6 +58,7 @@ namespace ReverseRabbitRunner.Core
                 return;
             }
             Instance = this;
+            DontDestroyOnLoad(gameObject);
 
             // Create audio source pool (general SFX)
             sourcePool = new AudioSource[poolSize];
