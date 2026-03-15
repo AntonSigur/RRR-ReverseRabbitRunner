@@ -20,6 +20,7 @@ namespace ReverseRabbitRunner.Core
         private readonly List<string> history = new();
         private int historyIndex = -1;
         private bool focusInput;
+        private bool submitRequested;
 
         private Dictionary<string, System.Action<string[]>> commands;
 
@@ -87,6 +88,10 @@ namespace ReverseRabbitRunner.Core
                     focusInput = true;
                 }
             }
+
+            // Reliable Enter key handling via Input System (IMGUI events can be flaky)
+            if (isOpen && Keyboard.current.enterKey.wasPressedThisFrame)
+                submitRequested = true;
         }
 
         private void OnGUI()
@@ -94,11 +99,11 @@ namespace ReverseRabbitRunner.Core
             if (!isOpen) return;
 
             float w = Screen.width;
-            float h = 320f;
+            float h = 160f; // compact: ~7 log lines + input
             float y = Screen.height - h;
 
             // Dark background
-            GUI.color = new Color(0.05f, 0.05f, 0.1f, 0.92f);
+            GUI.color = new Color(0.05f, 0.05f, 0.1f, 0.75f);
             GUI.DrawTexture(new Rect(0, y, w, h), Texture2D.whiteTexture);
             GUI.color = Color.white;
 
@@ -128,11 +133,11 @@ namespace ReverseRabbitRunner.Core
             }
 
             // Log area
-            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(h - 72));
+            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(h - 58));
 
             var logStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 12,
+                fontSize = 11,
                 wordWrap = true,
                 padding = new RectOffset(2, 2, 0, 0)
             };
@@ -155,9 +160,16 @@ namespace ReverseRabbitRunner.Core
                 fontSize = 13,
                 normal = { textColor = Color.green }
             };
-            inputText = GUILayout.TextField(inputText, inputStyle, GUILayout.Height(24));
+            inputText = GUILayout.TextField(inputText, inputStyle, GUILayout.Height(22));
 
-            // Handle Enter and arrow keys inside IMGUI
+            // Handle Enter via Input System flag (more reliable than IMGUI events)
+            if (submitRequested)
+            {
+                SubmitInput();
+                submitRequested = false;
+            }
+
+            // Arrow keys and Escape via IMGUI events
             Event e = Event.current;
             if (GUI.GetNameOfFocusedControl() == "CheatInput" && e.type == EventType.KeyDown)
             {
@@ -185,7 +197,7 @@ namespace ReverseRabbitRunner.Core
                 }
             }
 
-            if (GUILayout.Button("Run", GUILayout.Width(50), GUILayout.Height(24)))
+            if (GUILayout.Button("Run", GUILayout.Width(50), GUILayout.Height(22)))
                 SubmitInput();
 
             GUILayout.EndHorizontal();
