@@ -76,6 +76,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 🐇 Backwards-running rabbit with primitive body, face, ears, and arms holding mirrors in its paws
 - 🪞 Working mirror cameras (RenderTexture-based, adjustable with numpad, follows all rabbit movement including tilt)
 - 👨‍🌾 Angry farmer with hat, pitchfork, scowling face, and AI pursuit
+- 🧠 Farmer obstacle avoidance AI — scans ahead, switches lanes, stumbles on hits, disappears when far behind, reappears after delay
 - 🥕 Carrot collecting with score tracking and bobbing animation
 - 🛤️ 5-lane switching (A/D or arrow keys)
 - 🦘 Jump mechanic (Space) — clear obstacles and collect mid-air carrots
@@ -84,6 +85,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 🚧 4 obstacle types (farm crates, round hay bales, fence posts, scarecrows) with stumble mechanic
 - 📈 Difficulty ramp — obstacles increase, farmer gets faster over time
 - 🚜 Tractor flatbed platforms — jump on top for a carrot jackpot (~100+ bonus carrots!)
+- 🍼 Birth-Carrot power-up — spawns 125 chaotic rainbow baby rabbits that swarm across lanes hoovering up carrots
 - 💀 Dramatic 7-stage cinematic death sequence (orbit camera, blood/carrot particles, fork stab)
 - 🔊 Full SFX system — 14 AI-generated sound effects (jump, land, collect, stumble, death, game over, danger warning, etc.)
 - 🎵 Music player — 32 AI-generated tracks with shuffled playback and crossfade transitions
@@ -91,10 +93,11 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - ⏸️ Pause menu (Esc/Q) with Resume, Settings, and Quit to Menu
 - 🏠 Main Menu scene with Play, Settings, and Quit
 - 📊 HUD showing score, speed, lane, farmer threat, distance, and chunk stats
+- 🎮 In-game cheat console (Shift+F12) with debug commands
 
 ### What's Coming 🚧
 
-- [ ] Power-up implementations (Birth / Wing / Dirty carrots)
+- [ ] More power-ups (Wing-Carrot flight, Dirty-Carrot mirror mud)
 - [ ] More platform types (hay bale row, stone wall, log pile)
 - [ ] Character model upgrades (goodbye, primitive art)
 - [ ] Animations (running, jumping, stumble, farmer rage)
@@ -137,6 +140,22 @@ git clone git@github.com:AntonSigur/RRR-ReverseRabbitRunner.git
 | `Esc` or `Q` | Pause / Resume |
 | `Shift+3` | Skip music track *(editor only)* |
 | `Shift+4` | Toggle song name overlay *(editor only)* |
+| `Shift+F12` | Open cheat console |
+
+### 🎮 Cheat Console Commands
+
+Open with `Shift+F12` during gameplay:
+
+| Command | Effect |
+|---------|--------|
+| `babies` | Spawn 125 baby rabbits |
+| `kill` | Kill all baby rabbits |
+| `god` | Toggle god mode (invincible) |
+| `speed <n>` | Override rabbit speed |
+| `score <n>` | Set score |
+| `farmer` | Toggle farmer on/off |
+| `die` | Trigger death sequence |
+| `help` | List all commands |
 
 ---
 
@@ -146,11 +165,11 @@ git clone git@github.com:AntonSigur/RRR-ReverseRabbitRunner.git
 Assets/_Project/
 ├── Scripts/
 │   ├── Core/       → GameManager, ScoreManager, InputManager, AutoStartGame,
-│   │                 AudioManager, MusicPlayer, DeathSequence
+│   │                 AudioManager, MusicPlayer, DeathSequence, CheatConsole
 │   ├── Player/     → RabbitController, MirrorCamera, CameraFollow
 │   ├── World/      → ChunkManager, LaneGenerator, ObstacleSpawner, CarrotBob
 │   ├── Enemies/    → FarmerController, FarmerForkWave
-│   ├── PowerUps/   → BirthCarrot, WingCarrot, DirtyCarrot (stubs)
+│   ├── PowerUps/   → BirthCarrot, BabyRabbit, WingCarrot, DirtyCarrot (stubs)
 │   ├── UI/         → GameHUD, MainMenuUI, PauseMenuUI
 │   └── Editor/     → SceneSetup, MainMenuSceneSetup
 ├── Audio/
