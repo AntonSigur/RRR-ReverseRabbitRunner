@@ -14,7 +14,7 @@ namespace ReverseRabbitRunner.World
 
         [Header("Lane Settings")]
         [SerializeField] private float laneWidth = 3f;
-        [SerializeField] private int laneCount = 3;
+        [SerializeField] private int laneCount = 5;
 
         [Header("Difficulty")]
         [SerializeField] private float minSpawnInterval = 0.5f;
