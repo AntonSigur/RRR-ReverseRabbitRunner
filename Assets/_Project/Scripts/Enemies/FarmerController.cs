@@ -27,9 +27,10 @@ namespace ReverseRabbitRunner.Enemies
 
         [Header("Farmer Stumble")]
         [SerializeField] private float farmerStumbleDuration = 2.5f;
-        [SerializeField] private float farmerStumblePenalty = 4f;
-        [SerializeField] private float maxDistance = 18f;
-        [SerializeField] private float reappearDelay = 4f;
+        [SerializeField] private float farmerStumblePenalty = 10f;
+        [SerializeField] private float fadeDistance = 25f;
+        [SerializeField] private float maxDistance = 35f;
+        [SerializeField] private float reappearDelay = 8f;
 
         [Header("Death Sequence")]
         [SerializeField] private float catchPauseDuration = 1.0f;
@@ -60,6 +61,7 @@ namespace ReverseRabbitRunner.Enemies
         private bool isFarmerStumbling;
         private float farmerStumbleTimer;
         private float tooFarTimer;
+        private bool isVisible = true;
 
         public float CurrentDistance => currentDistance;
         public float NormalizedThreat => 1f - Mathf.Clamp01(currentDistance / baseDistance);
@@ -176,6 +178,15 @@ namespace ReverseRabbitRunner.Enemies
             lookDir.y = 0;
             if (lookDir.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.LookRotation(lookDir);
+
+            // Visibility: fade out when far behind
+            bool shouldBeVisible = currentDistance < fadeDistance;
+            if (shouldBeVisible != isVisible)
+            {
+                isVisible = shouldBeVisible;
+                foreach (var r in GetComponentsInChildren<Renderer>())
+                    r.enabled = isVisible;
+            }
 
             // Too far behind → reappear after delay
             if (currentDistance > maxDistance)
