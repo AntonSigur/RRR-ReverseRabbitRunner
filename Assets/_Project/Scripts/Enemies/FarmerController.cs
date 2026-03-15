@@ -132,10 +132,12 @@ namespace ReverseRabbitRunner.Enemies
                     isFarmerStumbling = false;
             }
 
-            // Z distance: slowly recover toward base (much slower when stumbling)
+            // Z distance: recover toward baseDistance from either direction
+            // After farmer stumble (dist > base): slowly decrease back
+            // After rabbit stumble (dist < base): slowly increase back
             float recoveryRate = (baseDistance - catchDistance) / Mathf.Max(farmerRecoveryTime, 0.1f);
             if (isFarmerStumbling) recoveryRate *= 0.2f;
-            currentDistance = Mathf.Min(currentDistance + recoveryRate * Time.deltaTime, baseDistance);
+            currentDistance = Mathf.MoveTowards(currentDistance, baseDistance, recoveryRate * Time.deltaTime);
 
             // Lateral: blend between own lane and rabbit tracking
             float laneX = (targetLane - laneCount / 2) * laneWidth;
@@ -160,9 +162,13 @@ namespace ReverseRabbitRunner.Enemies
             transform.position = farmerPos;
 
             // Manual obstacle proximity check (OnTriggerEnter unreliable with teleporting)
+            // OverlapBox with Z depth covers teleport gaps between frames
             if (!isFarmerStumbling && !isCatching)
             {
-                var hits = Physics.OverlapSphere(farmerPos + Vector3.up, 0.5f);
+                Vector3 boxCenter = farmerPos + Vector3.up;
+                Vector3 halfExtents = new Vector3(0.5f, 1f, 0.75f);
+                var hits = Physics.OverlapBox(boxCenter, halfExtents, Quaternion.identity,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
                 foreach (var hit in hits)
                 {
                     if (hit.CompareTag("Obstacle"))
@@ -198,6 +204,15 @@ namespace ReverseRabbitRunner.Enemies
                     tooFarTimer = 0f;
                     isFarmerStumbling = false;
                     targetLane = rabbitController?.CurrentLane ?? laneCount / 2;
+
+                    // Force visibility on immediately
+                    if (!isVisible)
+                    {
+                        isVisible = true;
+                        foreach (var r in GetComponentsInChildren<Renderer>())
+                            r.enabled = true;
+                    }
+
                     Debug.Log("[Farmer] Reappeared!");
                 }
             }
@@ -224,7 +239,8 @@ namespace ReverseRabbitRunner.Enemies
             Vector3 halfExtents = new Vector3(laneWidth * 0.4f, 1.5f, lookAheadDistance * 0.5f);
 
             bool obstacleAhead = false;
-            var cols = Physics.OverlapBox(scanCenter, halfExtents, Quaternion.identity);
+            var cols = Physics.OverlapBox(scanCenter, halfExtents, Quaternion.identity,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
             foreach (var col in cols)
             {
                 if (col.CompareTag("Obstacle"))
@@ -269,7 +285,8 @@ namespace ReverseRabbitRunner.Enemies
                 laneX, 1f, transform.position.z - lookAheadDistance * 0.5f);
             Vector3 halfExtents = new Vector3(laneWidth * 0.4f, 1.5f, lookAheadDistance * 0.5f);
 
-            var cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity);
+            var cols = Physics.OverlapBox(center, halfExtents, Quaternion.identity,
+                Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
             foreach (var col in cols)
             {
                 if (col.CompareTag("Obstacle")) return true;
