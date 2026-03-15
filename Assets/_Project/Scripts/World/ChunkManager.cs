@@ -42,6 +42,7 @@ namespace ReverseRabbitRunner.World
         [Header("Power-Up Settings")]
         [SerializeField] private int powerUpStartChunk = 6;
         [SerializeField] private float birthCarrotChance = 0.25f;
+        [SerializeField] private float wingCarrotChance = 0.15f;
 
         // Public stats for HUD
         public float TotalDistance { get; private set; }
@@ -625,48 +626,74 @@ namespace ReverseRabbitRunner.World
 
         private Material powerUpBirthMat;
         private Material powerUpLeavesMat;
+        private Material powerUpWingMat;
+        private Material powerUpWingLeavesMat;
 
         private void SpawnPowerUpsInChunk(Transform parent, float chunkStartZ, int chunkIndex)
         {
             if (chunkIndex < powerUpStartChunk) return;
 
-            // Don't spawn if babies are already active
+            // Don't spawn if babies are already active or rabbit is flying
             if (PowerUps.BabyRabbit.ActiveBabies.Count > 0) return;
+            var rabbit = GameObject.FindGameObjectWithTag("Player");
+            if (rabbit != null && rabbit.GetComponent<Player.RabbitController>()?.IsFlying == true) return;
 
-            if (Random.value > birthCarrotChance) return;
+            // Roll for which power-up to spawn (mutually exclusive per chunk)
+            float roll = Random.value;
+            bool spawnBirth = roll < birthCarrotChance;
+            bool spawnWing = !spawnBirth && roll < birthCarrotChance + wingCarrotChance;
 
-            if (powerUpBirthMat == null)
-            {
-                powerUpBirthMat = MakeMat(new Color(1f, 0.45f, 0.85f)); // hot pink
-                powerUpLeavesMat = MakeMat(new Color(0.9f, 0.3f, 0.6f)); // pink leaves
-            }
+            if (!spawnBirth && !spawnWing) return;
 
             int lane = Random.Range(0, maxLanes);
             float xPos = (lane - maxLanes / 2) * laneWidth;
             float zPos = chunkStartZ - Random.Range(10f, chunkLength - 10f);
 
-            // Special carrot visual: pink, slightly larger, with glow-like leaves
+            if (spawnBirth)
+            {
+                if (powerUpBirthMat == null)
+                {
+                    powerUpBirthMat = MakeMat(new Color(1f, 0.45f, 0.85f));
+                    powerUpLeavesMat = MakeMat(new Color(0.9f, 0.3f, 0.6f));
+                }
+                SpawnPowerUpCarrot(parent, xPos, zPos, "BirthCarrot",
+                    powerUpBirthMat, powerUpLeavesMat, typeof(PowerUps.BirthCarrot));
+            }
+            else if (spawnWing)
+            {
+                if (powerUpWingMat == null)
+                {
+                    powerUpWingMat = MakeMat(new Color(0.3f, 0.7f, 1f));      // sky blue
+                    powerUpWingLeavesMat = MakeMat(new Color(0.2f, 0.5f, 0.9f)); // blue leaves
+                }
+                SpawnPowerUpCarrot(parent, xPos, zPos, "WingCarrot",
+                    powerUpWingMat, powerUpWingLeavesMat, typeof(PowerUps.WingCarrot));
+            }
+        }
+
+        private void SpawnPowerUpCarrot(Transform parent, float xPos, float zPos,
+            string name, Material bodyMat, Material leavesMat, System.Type powerUpType)
+        {
             var carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            carrot.name = "BirthCarrot";
+            carrot.name = name;
             carrot.tag = "PowerUp";
             carrot.transform.parent = parent;
             carrot.transform.position = new Vector3(xPos, 0.55f, zPos);
             carrot.transform.localScale = new Vector3(0.45f, 0.85f, 0.45f);
             carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);
-            carrot.GetComponent<Renderer>().material = powerUpBirthMat;
+            carrot.GetComponent<Renderer>().material = bodyMat;
             carrot.GetComponent<Collider>().isTrigger = true;
 
-            // Big flashy leaves
             var leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
             leaves.name = "Leaves";
             leaves.transform.parent = carrot.transform;
             leaves.transform.localPosition = new Vector3(0, -0.7f, 0);
             leaves.transform.localScale = new Vector3(2.5f, 0.4f, 2.5f);
             Object.DestroyImmediate(leaves.GetComponent<Collider>());
-            leaves.GetComponent<Renderer>().material = powerUpLeavesMat;
+            leaves.GetComponent<Renderer>().material = leavesMat;
 
             carrot.AddComponent<CarrotBob>();
-            carrot.AddComponent<PowerUps.BirthCarrot>();
+            carrot.AddComponent(powerUpType);
         }
 
         private void DespawnOldestChunk()

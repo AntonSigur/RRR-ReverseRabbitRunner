@@ -3,9 +3,10 @@ using UnityEngine;
 namespace ReverseRabbitRunner.Enemies
 {
     /// <summary>
-    /// Angry farmer who chases the rabbit. Now with obstacle avoidance AI!
-    /// The farmer tries to dodge obstacles by switching lanes, but isn't perfect.
-    /// When hit, the farmer stumbles and falls behind. If too far, reappears after a delay.
+    /// Angry farmer who chases the rabbit with obstacle avoidance AI.
+    /// Dodges obstacles by switching lanes (imperfect), stumbles on hits,
+    /// fades out when far behind, reappears after delay.
+    /// Flight-aware: runs freely while rabbit is flying.
     /// </summary>
     public class FarmerController : MonoBehaviour
     {
@@ -62,12 +63,31 @@ namespace ReverseRabbitRunner.Enemies
         private float farmerStumbleTimer;
         private float tooFarTimer;
         private bool isVisible = true;
+        private bool isReappearing;
+        private int stumbleCount;
 
+        // === Public State (for debug overlay & tests) ===
         public float CurrentDistance => currentDistance;
+        public float BaseDistance => baseDistance;
+        public float FadeDistance => fadeDistance;
+        public float MaxDistance => maxDistance;
         public float NormalizedThreat => 1f - Mathf.Clamp01(currentDistance / baseDistance);
         public bool IsStumbling => isFarmerStumbling;
+        public bool IsVisible => isVisible;
+        public bool IsCatching => isCatching;
+        public bool IsReappearing => isReappearing;
+        public int TargetLane => targetLane;
+        public float StumbleTimer => farmerStumbleTimer;
+        public float TooFarTimer => tooFarTimer;
+        public int StumbleCount => stumbleCount;
 
         public event System.Action OnCaughtRabbit;
+
+        /// <summary>Force stumble from external code (tests, console).</summary>
+        public void ForceStumble() => FarmerStumble();
+
+        /// <summary>Force distance (tests).</summary>
+        public void ForceDistance(float dist) => currentDistance = dist;
 
         private void Start()
         {
@@ -100,7 +120,7 @@ namespace ReverseRabbitRunner.Enemies
             col.size = new Vector3(0.8f, 2f, 0.8f);
             col.center = new Vector3(0, 1f, 0);
 
-            // Remove visual-only colliders from children (they cause physics interference)
+            // Remove visual-only colliders from children
             foreach (var childCol in GetComponentsInChildren<Collider>())
                 if (childCol.gameObject != gameObject) Destroy(childCol);
         }
@@ -110,15 +130,16 @@ namespace ReverseRabbitRunner.Enemies
             if (playerTransform == null) return;
             if (Core.GameManager.Instance?.CurrentState != Core.GameManager.GameState.Playing) return;
 
-            // Catch sequence takes priority
             if (isCatching)
             {
                 HandleCatchSequence();
                 return;
             }
 
-            // Periodically scan for obstacles ahead
-            if (Time.time >= nextScanTime)
+            bool rabbitFlying = rabbitController?.IsFlying == true;
+
+            // Obstacle scanning — skip during flight (farmer runs freely)
+            if (Time.time >= nextScanTime && !rabbitFlying)
             {
                 ScanAndDodge();
                 nextScanTime = Time.time + scanInterval;
@@ -132,38 +153,35 @@ namespace ReverseRabbitRunner.Enemies
                     isFarmerStumbling = false;
             }
 
-            // Z distance: recover toward baseDistance from either direction
-            // After farmer stumble (dist > base): slowly decrease back
-            // After rabbit stumble (dist < base): slowly increase back
+            // Z distance: recover toward baseDistance
             float recoveryRate = (baseDistance - catchDistance) / Mathf.Max(farmerRecoveryTime, 0.1f);
-            if (isFarmerStumbling) recoveryRate *= 0.2f;
+            if (isFarmerStumbling)
+                recoveryRate *= 0.2f;
+            else if (rabbitFlying)
+                recoveryRate *= 2f; // Farmer runs freely during flight — faster recovery
             currentDistance = Mathf.MoveTowards(currentDistance, baseDistance, recoveryRate * Time.deltaTime);
 
-            // Lateral: blend between own lane and rabbit tracking
+            // Lateral movement
             float laneX = (targetLane - laneCount / 2) * laneWidth;
             float rabbitX = playerTransform.position.x;
-
             float blendTarget = isFarmerStumbling
-                ? currentX // stay put when stumbling
-                : Mathf.Lerp(laneX, rabbitX, 0.6f); // 60% rabbit, 40% own lane
-
+                ? currentX
+                : Mathf.Lerp(laneX, rabbitX, 0.6f);
             currentX = Mathf.Lerp(currentX, blendTarget, lateralFollowSpeed * Time.deltaTime);
 
-            // Sway: more erratic when stumbling
+            // Sway
             swayOffset = isFarmerStumbling
                 ? Mathf.Sin(Time.time * swaySpeed * 4f) * swayAmount * 3f
                 : Mathf.Sin(Time.time * swaySpeed) * swayAmount;
 
-            // Position farmer (use transform.position, not MovePosition which lags)
+            // Position farmer
             Vector3 farmerPos = new Vector3(
-                currentX + swayOffset,
-                0f,
+                currentX + swayOffset, 0f,
                 playerTransform.position.z + currentDistance);
             transform.position = farmerPos;
 
-            // Manual obstacle proximity check (OnTriggerEnter unreliable with teleporting)
-            // OverlapBox with Z depth covers teleport gaps between frames
-            if (!isFarmerStumbling && !isCatching)
+            // Obstacle proximity check — skip during flight
+            if (!isFarmerStumbling && !isCatching && !rabbitFlying)
             {
                 Vector3 boxCenter = farmerPos + Vector3.up;
                 Vector3 halfExtents = new Vector3(0.5f, 1f, 0.75f);
@@ -179,13 +197,12 @@ namespace ReverseRabbitRunner.Enemies
                 }
             }
 
-            // Face rabbit
+            // Face rabbit (looks up when rabbit is flying)
             Vector3 lookDir = playerTransform.position - farmerPos;
-            lookDir.y = 0;
             if (lookDir.sqrMagnitude > 0.01f)
                 transform.rotation = Quaternion.LookRotation(lookDir);
 
-            // Visibility: fade out when far behind
+            // Visibility
             bool shouldBeVisible = currentDistance < fadeDistance;
             if (shouldBeVisible != isVisible)
             {
@@ -194,35 +211,46 @@ namespace ReverseRabbitRunner.Enemies
                     r.enabled = isVisible;
             }
 
-            // Too far behind → reappear after delay
-            if (currentDistance > maxDistance)
+            // Reappear logic: once past maxDistance, timer starts and won't reset
+            if (currentDistance > maxDistance && !isReappearing)
             {
-                tooFarTimer += Time.deltaTime;
-                if (tooFarTimer >= reappearDelay)
-                {
-                    currentDistance = baseDistance;
-                    tooFarTimer = 0f;
-                    isFarmerStumbling = false;
-                    targetLane = rabbitController?.CurrentLane ?? laneCount / 2;
-
-                    // Force visibility on immediately
-                    if (!isVisible)
-                    {
-                        isVisible = true;
-                        foreach (var r in GetComponentsInChildren<Renderer>())
-                            r.enabled = true;
-                    }
-
-                    Debug.Log("[Farmer] Reappeared!");
-                }
-            }
-            else
-            {
+                isReappearing = true;
                 tooFarTimer = 0f;
             }
 
-            // Check catch (not during stumble or god mode)
-            if (currentDistance <= catchDistance && !isFarmerStumbling && !Core.CheatConsole.GodMode)
+            if (isReappearing)
+            {
+                if (currentDistance < fadeDistance)
+                {
+                    // Natural recovery brought farmer back — cancel reappear
+                    isReappearing = false;
+                    tooFarTimer = 0f;
+                }
+                else
+                {
+                    tooFarTimer += Time.deltaTime;
+                    if (tooFarTimer >= reappearDelay)
+                    {
+                        currentDistance = baseDistance;
+                        tooFarTimer = 0f;
+                        isReappearing = false;
+                        isFarmerStumbling = false;
+                        targetLane = rabbitController?.CurrentLane ?? laneCount / 2;
+
+                        if (!isVisible)
+                        {
+                            isVisible = true;
+                            foreach (var r in GetComponentsInChildren<Renderer>())
+                                r.enabled = true;
+                        }
+                        Debug.Log("[Farmer] Reappeared!");
+                    }
+                }
+            }
+
+            // Catch check — not during stumble, flight, or god mode
+            if (currentDistance <= catchDistance && !isFarmerStumbling
+                && !Core.CheatConsole.GodMode && !rabbitFlying)
                 StartCatchSequence();
         }
 
@@ -232,7 +260,6 @@ namespace ReverseRabbitRunner.Enemies
         {
             if (isFarmerStumbling) return;
 
-            // Check current target lane for obstacles ahead
             float myX = (targetLane - laneCount / 2) * laneWidth;
             Vector3 scanCenter = new Vector3(
                 myX, 1f, transform.position.z - lookAheadDistance * 0.5f);
@@ -243,23 +270,16 @@ namespace ReverseRabbitRunner.Enemies
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
             foreach (var col in cols)
             {
-                if (col.CompareTag("Obstacle"))
-                {
-                    obstacleAhead = true;
-                    break;
-                }
+                if (col.CompareTag("Obstacle")) { obstacleAhead = true; break; }
             }
             if (!obstacleAhead) return;
 
-            // AI imperfection: sometimes fails to dodge
             if (Random.value > dodgeSuccessRate) return;
 
-            // Try adjacent lanes, prefer lane closer to rabbit
             int rabbitLane = rabbitController?.CurrentLane ?? laneCount / 2;
             int left = targetLane > 0 ? targetLane - 1 : -1;
             int right = targetLane < laneCount - 1 ? targetLane + 1 : -1;
 
-            // Sort candidates: prefer lane closer to rabbit
             int first = -1, second = -1;
             if (left >= 0 && right >= 0)
             {
@@ -275,7 +295,6 @@ namespace ReverseRabbitRunner.Enemies
                 targetLane = first;
             else if (second >= 0 && !IsLaneBlocked(second))
                 targetLane = second;
-            // else: all blocked, will stumble on collision
         }
 
         private bool IsLaneBlocked(int lane)
@@ -294,11 +313,12 @@ namespace ReverseRabbitRunner.Enemies
             return false;
         }
 
-        // === Farmer Collision with Obstacles ===
+        // === Collision ===
 
         private void OnTriggerEnter(Collider other)
         {
             if (isCatching || isFarmerStumbling) return;
+            if (rabbitController?.IsFlying == true) return;
 
             if (other.CompareTag("Obstacle"))
                 FarmerStumble();
@@ -309,14 +329,15 @@ namespace ReverseRabbitRunner.Enemies
             isFarmerStumbling = true;
             farmerStumbleTimer = farmerStumbleDuration;
             currentDistance += farmerStumblePenalty;
-            Debug.Log($"[Farmer] Stumbled! Distance: {currentDistance:F1}");
+            stumbleCount++;
+            Debug.Log($"[Farmer] Stumbled #{stumbleCount}! Distance: {currentDistance:F1}");
         }
 
         // === Rabbit Stumble Response ===
 
         public void OnRabbitStumble(float severity)
         {
-            if (isFarmerStumbling) return; // can't gain ground while stumbling
+            if (isFarmerStumbling) return;
             float penalty = severity > 3f ? tallObstaclePenaltyDistance : smallObstaclePenaltyDistance;
             currentDistance = Mathf.Max(catchDistance, currentDistance - penalty);
         }

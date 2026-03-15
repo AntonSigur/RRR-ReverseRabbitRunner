@@ -3,27 +3,37 @@ using UnityEngine;
 namespace ReverseRabbitRunner.PowerUps
 {
     /// <summary>
-    /// Wing-Carrot: Rabbit turns forward, sprouts wings, and flies/glides
-    /// to collect airborne carrots.
+    /// Wing-Carrot: Rabbit does a 180° backflip, flies forward at 6x height
+    /// collecting a sky carrot stream, then backflips back to backwards running.
     /// </summary>
     public class WingCarrot : PowerUpBase
     {
         [Header("Wing Carrot Settings")]
-        [SerializeField] private float flyHeight = 5f;
-        [SerializeField] private float glideSpeed = 15f;
+        [SerializeField] private float flyHeight = 6f;
+        [SerializeField] private float flyDuration = 8f;
 
         protected override void Activate(Player.RabbitController rabbit)
         {
             isActive = true;
-            // TODO: Flip rabbit to face forward, elevate, enable flight controls
-            Debug.Log("Wing-Carrot activated! Rabbit takes flight!");
+
+            // Don't activate if already flying
+            if (rabbit.IsFlying)
+            {
+                Debug.Log("[WingCarrot] Already flying — ignored.");
+                Destroy(gameObject);
+                return;
+            }
+
+            var fc = rabbit.gameObject.AddComponent<FlightController>();
+            fc.Initialize(rabbit, flyHeight, flyDuration);
+
+            Debug.Log("[WingCarrot] Activated! Rabbit takes flight!");
+            Destroy(gameObject);
         }
 
         protected override void Deactivate(Player.RabbitController rabbit)
         {
             isActive = false;
-            // TODO: Return rabbit to ground, flip back to backwards
-            Debug.Log("Wing-Carrot effect ended. Back to running backwards.");
         }
     }
 }

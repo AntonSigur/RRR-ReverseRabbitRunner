@@ -53,6 +53,10 @@ namespace ReverseRabbitRunner.Player
         private float lastStumbleTime = -100f;
         private float stumbleShakeTimer;
 
+        // Flight state
+        private bool isFlying;
+        private float? flightTargetY;
+
         // Input
         private InputAction moveAction;
         private InputAction jumpAction;
@@ -65,6 +69,7 @@ namespace ReverseRabbitRunner.Player
         public bool IsGrounded => controller != null && controller.isGrounded;
         public bool IsJumping => isJumping;
         public bool IsStumbling => isStumbling;
+        public bool IsFlying => isFlying;
         public bool InDangerWindow => (Time.time - lastStumbleTime) < stumbleDangerWindow;
 
         public event System.Action OnHitObstacle;
@@ -137,8 +142,12 @@ namespace ReverseRabbitRunner.Player
             }
             #endif
 
-            // Gravity first — so grounded state is correct for input
-            if (controller.isGrounded && verticalVelocity < 0f)
+            // Gravity — disabled during flight
+            if (isFlying)
+            {
+                verticalVelocity = 0;
+            }
+            else if (controller.isGrounded && verticalVelocity < 0f)
             {
                 verticalVelocity = -2f; // Small downward force to stay grounded
                 if (isJumping) isJumping = false;
@@ -177,16 +186,25 @@ namespace ReverseRabbitRunner.Player
             // Forward movement (rabbit runs backwards, so negative Z)
             movement.z = -forwardSpeed * Time.deltaTime;
 
-            // Smooth lateral movement — slower when airborne
+            // Smooth lateral movement — full speed during flight, slower when airborne
             float switchSpeed = laneSwitchSpeed;
-            if (!controller.isGrounded)
+            if (!controller.isGrounded && !isFlying)
                 switchSpeed *= airLaneSwitchMultiplier;
 
             float currentX = transform.position.x;
             float newX = Mathf.Lerp(currentX, targetXPosition, switchSpeed * Time.deltaTime);
             movement.x = newX - currentX;
 
-            movement.y = verticalVelocity * Time.deltaTime;
+            // Vertical movement: flight target or gravity
+            if (isFlying && flightTargetY.HasValue)
+            {
+                float yDiff = flightTargetY.Value - transform.position.y;
+                movement.y = yDiff * 8f * Time.deltaTime;
+            }
+            else
+            {
+                movement.y = verticalVelocity * Time.deltaTime;
+            }
 
             controller.Move(movement);
 
@@ -219,7 +237,7 @@ namespace ReverseRabbitRunner.Player
                            || Input.GetKeyDown(KeyCode.UpArrow);
             }
 
-            if (jumpPressed && controller.isGrounded)
+            if (jumpPressed && controller.isGrounded && !isFlying)
                 Jump();
 
             // Touch swipe (using Touchscreen from Input System)
@@ -241,6 +259,7 @@ namespace ReverseRabbitRunner.Player
         private void UpdateBodyTilt()
         {
             if (bodyTransform == null) return;
+            if (isFlying) return; // FlightController manages rotation during flight
 
             float targetTilt = 0f;
             if (!controller.isGrounded)
@@ -316,6 +335,23 @@ namespace ReverseRabbitRunner.Player
             OnHitObstacle?.Invoke();
         }
 
+        // === Flight Mode ===
+
+        public void SetFlying(bool flying)
+        {
+            isFlying = flying;
+            if (flying)
+            {
+                verticalVelocity = 0;
+                isJumping = false;
+            }
+        }
+
+        public void SetFlightTarget(float? targetY)
+        {
+            flightTargetY = targetY;
+        }
+
         private void Stumble(float penalty)
         {
             if (Core.CheatConsole.GodMode) return;
@@ -355,6 +391,7 @@ namespace ReverseRabbitRunner.Player
             }
             else if (other.CompareTag("Obstacle"))
             {
+                if (isFlying) return; // Invulnerable during flight
                 float obstacleHeight = other.bounds.size.y;
                 bool isSmall = obstacleHeight < 1.0f;
 

@@ -70,7 +70,14 @@ namespace ReverseRabbitRunner.Core
                 ["speed"]   = SetSpeed,
                 ["score"]   = SetScore,
                 ["farmer"]  = _ => ToggleFarmer(),
+                ["fstatus"] = _ => FarmerStatus(),
+                ["fdist"]   = SetFarmerDistance,
+                ["fstumble"]= _ => FarmerForceStumble(),
                 ["die"]     = _ => TriggerDeath(),
+                ["wing"]    = _ => TriggerWingCarrot(),
+                ["fly"]     = _ => TriggerWingCarrot(),
+                ["test"]    = RunTest,
+                ["overlay"] = _ => DebugOverlay.Toggle(),
             };
         }
 
@@ -260,7 +267,13 @@ namespace ReverseRabbitRunner.Core
             Log("speed [n]    Set speed (0 or no arg = show/reset)", Color.white);
             Log("score [n]    Set score (no arg = show)", Color.white);
             Log("farmer       Toggle farmer on/off", Color.white);
+            Log("fstatus      Show farmer state details", Color.white);
+            Log("fdist [n]    Set farmer distance", Color.white);
+            Log("fstumble     Force farmer stumble", Color.white);
             Log("die          Trigger instant death", Color.white);
+            Log("wing/fly     Activate Wing-Carrot flight", Color.white);
+            Log("test <name>  Run test (flight/farmer/stumble/distance/all)", Color.white);
+            Log("overlay      Toggle debug overlay (or F11)", Color.white);
             Log("clear        Clear console", Color.white);
             Log("help         Show this", Color.white);
         }
@@ -379,6 +392,79 @@ namespace ReverseRabbitRunner.Core
 
             rabbit.Die();
             Log("Rabbit killed!", Color.red);
+        }
+
+        private void TriggerWingCarrot()
+        {
+            var rabbit = FindFirstObjectByType<Player.RabbitController>();
+            if (rabbit == null) { Log("No rabbit found!", Color.red); return; }
+
+            if (rabbit.IsFlying) { Log("Already flying!", Color.yellow); return; }
+
+            var fc = rabbit.gameObject.AddComponent<PowerUps.FlightController>();
+            fc.Initialize(rabbit, 6f, 8f);
+            Log("Wing-Carrot! FLIGHT MODE!", Color.cyan);
+        }
+
+        private void FarmerStatus()
+        {
+            var farmer = FindFirstObjectByType<Enemies.FarmerController>(FindObjectsInactive.Include);
+            if (farmer == null) { Log("No farmer found!", Color.red); return; }
+
+            Log("=== Farmer Status ===", Color.cyan);
+            Log($"Active: {farmer.gameObject.activeSelf}", Color.white);
+            Log($"Distance: {farmer.CurrentDistance:F1} / base:{farmer.BaseDistance:F0}", Color.white);
+            Log($"Visible: {farmer.IsVisible} (fade at {farmer.FadeDistance})", Color.white);
+            Log($"Stumbling: {farmer.IsStumbling} (timer: {farmer.StumbleTimer:F1}s)", Color.white);
+            Log($"Reappearing: {farmer.IsReappearing} (timer: {farmer.TooFarTimer:F1}s)", Color.white);
+            Log($"Catching: {farmer.IsCatching}", Color.white);
+            Log($"Lane: {farmer.TargetLane}  Stumbles: {farmer.StumbleCount}", Color.white);
+            Log($"Threat: {farmer.NormalizedThreat:P0}", Color.white);
+        }
+
+        private void SetFarmerDistance(string[] args)
+        {
+            var farmer = FindFirstObjectByType<Enemies.FarmerController>();
+            if (farmer == null) { Log("No farmer found!", Color.red); return; }
+
+            if (args.Length == 0)
+            {
+                Log($"Farmer distance: {farmer.CurrentDistance:F1}", Color.white);
+                return;
+            }
+
+            if (float.TryParse(args[0], out float dist))
+            {
+                farmer.ForceDistance(dist);
+                Log($"Farmer distance set to {dist:F1}", Color.green);
+            }
+        }
+
+        private void FarmerForceStumble()
+        {
+            var farmer = FindFirstObjectByType<Enemies.FarmerController>();
+            if (farmer == null) { Log("No farmer found!", Color.red); return; }
+            farmer.ForceStumble();
+            Log($"Farmer stumbled! Distance: {farmer.CurrentDistance:F1}", Color.yellow);
+        }
+
+        private void RunTest(string[] args)
+        {
+            if (args.Length == 0)
+            {
+                Log("Usage: test <name>", Color.yellow);
+                Log("Tests: flight, farmer, stumble, distance, all", Color.white);
+                return;
+            }
+
+            var runner = GameTestRunner.Instance;
+            if (runner == null)
+            {
+                Log("TestRunner not available!", Color.red);
+                return;
+            }
+
+            runner.RunTest(args[0], Log);
         }
     }
 }
