@@ -170,7 +170,7 @@ namespace ReverseRabbitRunner.Player
                     isStumbling = false;
             }
 
-            forwardSpeed = Mathf.Max(baseSpeed - speedDebt, 2f);
+            forwardSpeed = Core.CheatConsole.SpeedOverride ?? Mathf.Max(baseSpeed - speedDebt, 2f);
 
             Vector3 movement = Vector3.zero;
 
@@ -285,6 +285,7 @@ namespace ReverseRabbitRunner.Player
 
         public void Die()
         {
+            if (Core.CheatConsole.GodMode) return;
             if (!isAlive) return;
             isAlive = false;
 
@@ -317,6 +318,8 @@ namespace ReverseRabbitRunner.Player
 
         private void Stumble(float penalty)
         {
+            if (Core.CheatConsole.GodMode) return;
+
             // Two stumbles within danger window = death
             if ((Time.time - lastStumbleTime) < stumbleDangerWindow)
             {
@@ -386,7 +389,9 @@ namespace ReverseRabbitRunner.Player
             }
             else if (other.CompareTag("PowerUp"))
             {
-                // PowerUp handling delegated to individual PowerUp scripts
+                var powerUp = other.GetComponent<PowerUps.PowerUpBase>();
+                if (powerUp != null)
+                    powerUp.Collect(this);
             }
         }
     }

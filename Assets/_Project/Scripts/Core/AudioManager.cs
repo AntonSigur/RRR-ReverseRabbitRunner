@@ -166,6 +166,14 @@ namespace ReverseRabbitRunner.Core
         }
 
         /// <summary>
+        /// Public method for external callers (e.g. baby rabbits) to play collect sound.
+        /// </summary>
+        public void PlayCollectCarrot()
+        {
+            PlayCollectOverlapping(collectCarrot);
+        }
+
+        /// <summary>
         /// Play a special carrot collect sound (for power-up carrots).
         /// </summary>
         public void PlayCollectSpecial(int index)
