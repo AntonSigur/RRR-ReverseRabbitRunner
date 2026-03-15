@@ -158,6 +158,10 @@ namespace ReverseRabbitRunner.PowerUps
             Player.RabbitController rabbit, Enemies.FarmerController farmer,
             float zOffset, float xStart, float speedMult, Shader urpLit)
         {
+            // Fallback if shader was stripped or null
+            if (urpLit == null)
+                urpLit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
             var root = new GameObject($"BabyRabbit_{index}");
             root.layer = 0;
 
