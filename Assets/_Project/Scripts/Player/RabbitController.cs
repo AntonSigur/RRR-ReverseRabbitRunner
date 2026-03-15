@@ -170,7 +170,7 @@ namespace ReverseRabbitRunner.Player
                     isStumbling = false;
             }
 
-            forwardSpeed = Mathf.Max(baseSpeed - speedDebt, 2f);
+            forwardSpeed = Core.CheatConsole.SpeedOverride ?? Mathf.Max(baseSpeed - speedDebt, 2f);
 
             Vector3 movement = Vector3.zero;
 
@@ -222,16 +222,6 @@ namespace ReverseRabbitRunner.Player
             if (jumpPressed && controller.isGrounded)
                 Jump();
 
-            // Debug: Shift+B = spawn baby rabbits instantly
-            #if UNITY_EDITOR
-            if (Keyboard.current != null &&
-                Keyboard.current.leftShiftKey.isPressed &&
-                Keyboard.current.bKey.wasPressedThisFrame)
-            {
-                SpawnDebugBabies();
-            }
-            #endif
-
             // Touch swipe (using Touchscreen from Input System)
             if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
             {
@@ -247,30 +237,6 @@ namespace ReverseRabbitRunner.Player
             Core.AudioManager.Instance?.PlayJump();
             Debug.Log($"[Jump] force={jumpForce} speedDebt={speedDebt:F1}");
         }
-
-        #if UNITY_EDITOR
-        private void SpawnDebugBabies()
-        {
-            // Kill any existing babies first
-            foreach (var baby in new System.Collections.Generic.List<PowerUps.BabyRabbit>(PowerUps.BabyRabbit.ActiveBabies))
-                if (baby != null) Destroy(baby.gameObject);
-            PowerUps.BabyRabbit.ActiveBabies.Clear();
-
-            var farmer = Object.FindFirstObjectByType<Enemies.FarmerController>();
-            var urpLit = Shader.Find("Universal Render Pipeline/Lit");
-
-            int count = 125;
-            for (int i = 0; i < count; i++)
-            {
-                float zOffset = Random.Range(-5f, 10f);
-                float xStart = Random.Range(-7f, 7f);
-                float speedMult = Random.Range(0.8f, 1.2f);
-                PowerUps.BabyRabbit.CreateBabyRabbit(i, this, farmer,
-                    zOffset, xStart, speedMult, urpLit);
-            }
-            Debug.Log("[Debug] Shift+B: Spawned 125 chaotic baby rabbits!");
-        }
-        #endif
 
         private void UpdateBodyTilt()
         {
@@ -319,6 +285,7 @@ namespace ReverseRabbitRunner.Player
 
         public void Die()
         {
+            if (Core.CheatConsole.GodMode) return;
             if (!isAlive) return;
             isAlive = false;
 
@@ -351,6 +318,8 @@ namespace ReverseRabbitRunner.Player
 
         private void Stumble(float penalty)
         {
+            if (Core.CheatConsole.GodMode) return;
+
             // Two stumbles within danger window = death
             if ((Time.time - lastStumbleTime) < stumbleDangerWindow)
             {
