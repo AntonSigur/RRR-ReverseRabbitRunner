@@ -25,7 +25,7 @@ namespace ReverseRabbitRunner.Core
         private Dictionary<string, System.Action<string[]>> commands;
 
         // Cheat states accessible by other scripts
-        public static bool GodMode { get; private set; }
+        public static bool GodMode { get; internal set; }
         public static float? SpeedOverride { get; private set; }
 
         private struct LogEntry
