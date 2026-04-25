@@ -37,6 +37,11 @@ namespace ReverseRabbitRunner.UI
         private bool wasStumbling;
         private float stumbleFlashTimer;
 
+        // Death replay (top-down) state.
+        private bool replayActive;
+        private float replayStartedAt;
+        private const float ReplayPlaybackDuration = 2.4f;
+
         private void Start()
         {
             if (rabbit == null)
@@ -717,6 +722,34 @@ namespace ReverseRabbitRunner.UI
                 GUI.Label(new Rect(0, row + 172, Screen.width, 24),
                     $"Tier reached: {maxTier + 1}   |   Best combo: {maxCombo} (x{maxMult})", infoStyle);
 
+                // Watch-replay button — only when a replay buffer is available.
+                var rec = Core.DeathReplayRecorder.Instance;
+                if (rec != null && rec.Count >= 4)
+                {
+                    if (buttonStyle == null)
+                    {
+                        buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 22, fontStyle = FontStyle.Bold };
+                        buttonStyle.normal.textColor = Color.white;
+                    }
+                    float btnW = 260f, btnH = 42f;
+                    if (GUI.Button(new Rect((Screen.width - btnW) * 0.5f, row + 208, btnW, btnH),
+                                   replayActive ? "■  STOP REPLAY" : "▶  WATCH REPLAY", buttonStyle))
+                    {
+                        Core.AudioManager.Instance?.PlayMenuClick();
+                        if (replayActive)
+                        {
+                            replayActive = false;
+                        }
+                        else
+                        {
+                            replayActive = true;
+                            replayStartedAt = Time.unscaledTime;
+                        }
+                    }
+                }
+
+                if (replayActive) DrawDeathReplayPanel();
+
                 infoStyle.fontSize = 24;
                 GUI.Label(new Rect(0, Screen.height * 0.78f, Screen.width, 40),
                     "Press R to restart | M for menu", infoStyle);
@@ -743,6 +776,144 @@ namespace ReverseRabbitRunner.UI
             GUI.Label(new Rect(0, Screen.height - 50, Screen.width, 40),
                 "A/D or ←/→ to switch lanes | Space/W/↑ to jump", infoStyle);
             infoStyle.alignment = TextAnchor.UpperLeft;
+        }
+
+        /// <summary>
+        /// Renders a top-down replay of the rabbit + farmer over the captured
+        /// window. Auto-fits the trail to the panel; advances a play-head over
+        /// <see cref="ReplayPlaybackDuration"/> seconds of unscaled time, then
+        /// holds on the final frame so the player can read it.
+        /// </summary>
+        private void DrawDeathReplayPanel()
+        {
+            var rec = Core.DeathReplayRecorder.Instance;
+            if (rec == null || rec.Count < 2) return;
+
+            float panelW = Mathf.Min(420f, Screen.width - 80f);
+            float panelH = panelW * 0.6f;
+            float panelX = (Screen.width - panelW) * 0.5f;
+            float panelY = Screen.height * 0.55f;
+
+            // Background
+            GUI.color = new Color(0f, 0f, 0f, 0.85f);
+            GUI.DrawTexture(new Rect(panelX, panelY, panelW, panelH), Texture2D.whiteTexture);
+            GUI.color = new Color(1f, 0.84f, 0.2f, 0.9f);
+            GUI.DrawTexture(new Rect(panelX, panelY, panelW, 2f), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+
+            var titleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 16, fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperCenter,
+            };
+            titleStyle.normal.textColor = new Color(1f, 0.86f, 0.4f);
+            GUI.Label(new Rect(panelX, panelY + 4f, panelW, 22f), "LAST 3 SECONDS — TOP DOWN", titleStyle);
+
+            // Bounds in world space (auto-fit).
+            float minX = float.PositiveInfinity, maxX = float.NegativeInfinity;
+            float minZ = float.PositiveInfinity, maxZ = float.NegativeInfinity;
+            int n = rec.Count;
+            for (int i = 0; i < n; i++)
+            {
+                var s = rec.GetSnapshot(i);
+                if (s.Rabbit.x < minX) minX = s.Rabbit.x;
+                if (s.Rabbit.x > maxX) maxX = s.Rabbit.x;
+                if (s.Rabbit.z < minZ) minZ = s.Rabbit.z;
+                if (s.Rabbit.z > maxZ) maxZ = s.Rabbit.z;
+                if (s.HasFarmer)
+                {
+                    if (s.Farmer.x < minX) minX = s.Farmer.x;
+                    if (s.Farmer.x > maxX) maxX = s.Farmer.x;
+                    if (s.Farmer.z < minZ) minZ = s.Farmer.z;
+                    if (s.Farmer.z > maxZ) maxZ = s.Farmer.z;
+                }
+            }
+            // Pad
+            float pad = 1.5f;
+            minX -= pad; maxX += pad; minZ -= pad; maxZ += pad;
+            float spanX = Mathf.Max(0.001f, maxX - minX);
+            float spanZ = Mathf.Max(0.001f, maxZ - minZ);
+
+            // Inner area inside the panel (leave room for title).
+            float innerX = panelX + 12f;
+            float innerY = panelY + 28f;
+            float innerW = panelW - 24f;
+            float innerH = panelH - 40f;
+
+            // Use min of axes so aspect is preserved.
+            float scale = Mathf.Min(innerW / spanX, innerH / spanZ);
+            float drawW = spanX * scale;
+            float drawH = spanZ * scale;
+            float ox = innerX + (innerW - drawW) * 0.5f;
+            float oy = innerY + (innerH - drawH) * 0.5f;
+
+            // Map a world point to panel coordinates. Z runs into screen so we
+            // flip it so 'forward' shows as up on the panel.
+            Vector2 ToPanel(Vector3 w)
+                => new Vector2(ox + (w.x - minX) * scale,
+                               oy + drawH - (w.z - minZ) * scale);
+
+            // Play-head
+            float age = Time.unscaledTime - replayStartedAt;
+            float t = Mathf.Clamp01(age / ReplayPlaybackDuration);
+            int headIndex = Mathf.Clamp(Mathf.FloorToInt(t * (n - 1)), 0, n - 1);
+
+            // Draw trails up to play-head: rabbit (white) and farmer (red).
+            for (int i = 1; i <= headIndex; i++)
+            {
+                var a = rec.GetSnapshot(i - 1);
+                var b = rec.GetSnapshot(i);
+                DrawPanelLine(ToPanel(a.Rabbit), ToPanel(b.Rabbit), new Color(1f, 1f, 1f, 0.9f), 2f);
+                if (a.HasFarmer && b.HasFarmer)
+                    DrawPanelLine(ToPanel(a.Farmer), ToPanel(b.Farmer), new Color(1f, 0.3f, 0.3f, 0.9f), 2f);
+            }
+
+            // Heads
+            var head = rec.GetSnapshot(headIndex);
+            DrawPanelDot(ToPanel(head.Rabbit), 5f, new Color(1f, 0.92f, 0.35f));
+            if (head.HasFarmer)
+                DrawPanelDot(ToPanel(head.Farmer), 5f, new Color(1f, 0.2f, 0.2f));
+
+            // Legend / scrub bar
+            var legend = new GUIStyle(GUI.skin.label) { fontSize = 11 };
+            legend.normal.textColor = new Color(1f, 0.92f, 0.35f);
+            GUI.Label(new Rect(panelX + 10f, panelY + panelH - 18f, 80f, 16f), "● Rabbit", legend);
+            legend.normal.textColor = new Color(1f, 0.3f, 0.3f);
+            GUI.Label(new Rect(panelX + 90f, panelY + panelH - 18f, 80f, 16f), "● Farmer", legend);
+
+            // Progress bar
+            float barX = panelX + panelW - 110f;
+            float barY = panelY + panelH - 14f;
+            GUI.color = new Color(1f, 1f, 1f, 0.25f);
+            GUI.DrawTexture(new Rect(barX, barY, 100f, 4f), Texture2D.whiteTexture);
+            GUI.color = new Color(1f, 0.86f, 0.4f, 0.95f);
+            GUI.DrawTexture(new Rect(barX, barY, 100f * t, 4f), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+        }
+
+        private static void DrawPanelDot(Vector2 p, float r, Color c)
+        {
+            var prev = GUI.color;
+            GUI.color = c;
+            GUI.DrawTexture(new Rect(p.x - r, p.y - r, r * 2f, r * 2f), Texture2D.whiteTexture);
+            GUI.color = prev;
+        }
+
+        private static void DrawPanelLine(Vector2 a, Vector2 b, Color c, float thickness)
+        {
+            // Cheap 2D line via rotated stretched 1×1 white texture.
+            var prev = GUI.color;
+            GUI.color = c;
+            Vector2 d = b - a;
+            float len = d.magnitude;
+            if (len < 0.01f) { GUI.color = prev; return; }
+            float angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+            var pivot = new Vector2(a.x, a.y);
+            var matrix = GUI.matrix;
+            GUIUtility.RotateAroundPivot(angle, pivot);
+            GUI.DrawTexture(new Rect(a.x, a.y - thickness * 0.5f, len, thickness), Texture2D.whiteTexture);
+            GUI.matrix = matrix;
+            GUI.color = prev;
         }
 
         /// <summary>Renders the achievements list inside the pause overlay.</summary>
