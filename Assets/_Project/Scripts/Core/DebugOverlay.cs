@@ -12,6 +12,12 @@ namespace ReverseRabbitRunner.Core
         private static DebugOverlay instance;
         private bool isVisible;
 
+        // Cached scene refs — re-acquired only when null, so the per-frame
+        // OnGUI paint is allocation-free on the steady state.
+        private Player.RabbitController cachedRabbit;
+        private Enemies.FarmerController cachedFarmer;
+        private World.ChunkManager cachedChunk;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoCreate()
         {
@@ -75,7 +81,8 @@ namespace ReverseRabbitRunner.Core
                 "<color=#00ffff><b>[F11] Game Logic Monitor</b></color>");
 
             // Rabbit state
-            var rabbit = FindAnyObjectByType<Player.RabbitController>();
+            if (cachedRabbit == null) cachedRabbit = FindAnyObjectByType<Player.RabbitController>();
+            var rabbit = cachedRabbit;
             if (rabbit != null)
             {
                 string alive = rabbit.IsAlive ? "<color=#00ff00>✓</color>" : "<color=#ff0000>DEAD</color>";
@@ -92,7 +99,8 @@ namespace ReverseRabbitRunner.Core
             }
 
             // Farmer state
-            var farmer = FindAnyObjectByType<Enemies.FarmerController>();
+            if (cachedFarmer == null) cachedFarmer = FindAnyObjectByType<Enemies.FarmerController>();
+            var farmer = cachedFarmer;
             if (farmer != null && farmer.gameObject.activeSelf)
             {
                 string state;
@@ -154,7 +162,8 @@ namespace ReverseRabbitRunner.Core
                     $"target:{diff.SpeedTarget:F1} farmerX:{diff.FarmerClosenessMultiplier:F2}</color>");
 
             // World stats
-            var chunk = FindAnyObjectByType<World.ChunkManager>();
+            if (cachedChunk == null) cachedChunk = FindAnyObjectByType<World.ChunkManager>();
+            var chunk = cachedChunk;
             if (chunk != null)
             {
                 DrawLine(ref cy, x, w, lineH, style,

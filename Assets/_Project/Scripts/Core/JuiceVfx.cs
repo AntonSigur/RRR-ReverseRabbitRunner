@@ -22,6 +22,7 @@ namespace ReverseRabbitRunner.Core
         private ParticleSystem speedLines;
         private ParticleSystem sparkle;
         private ParticleSystem dust;
+        private Camera cachedCam;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoSpawn()
@@ -118,7 +119,8 @@ namespace ReverseRabbitRunner.Core
             // Visible above ~10 u/s, ramps up to a cap of ~22 u/s
             float intensity = Mathf.Clamp01((s - 10f) / 12f);
             // Anchor in front of camera (player runs backwards toward +Z)
-            var cam = Camera.main;
+            if (cachedCam == null) cachedCam = Camera.main;
+            var cam = cachedCam;
             if (cam != null)
             {
                 var t = speedLines.transform;

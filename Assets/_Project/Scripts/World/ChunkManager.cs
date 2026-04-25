@@ -52,6 +52,7 @@ namespace ReverseRabbitRunner.World
         public int ActiveChunkCount => activeChunks.Count;
 
         private Transform playerTransform;
+        private Player.RabbitController playerRabbit;
         private readonly List<ChunkData> activeChunks = new();
         private float nextSpawnZ;
         private float totalShifted;
@@ -105,7 +106,11 @@ namespace ReverseRabbitRunner.World
             if (previewGround != null) Destroy(previewGround);
 
             var playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null) playerTransform = playerObj.transform;
+            if (playerObj != null)
+            {
+                playerTransform = playerObj.transform;
+                playerRabbit = playerObj.GetComponent<Player.RabbitController>();
+            }
 
             if (playerTransform == null)
             {
@@ -647,8 +652,9 @@ namespace ReverseRabbitRunner.World
             // Don't spawn Birth-Carrot if babies are active; don't spawn Wing-Carrot if flying;
             // don't spawn Magnet-Carrot if one is already active on the rabbit.
             bool babiesActive = PowerUps.BabyRabbit.ActiveBabies.Count > 0;
-            var rabbit = GameObject.FindGameObjectWithTag("Player");
-            bool isFlying = rabbit != null && rabbit.GetComponent<Player.RabbitController>()?.IsFlying == true;
+            // Reuse cached RabbitController set in Start(); avoids a per-chunk
+            // tag scan and GetComponent.
+            bool isFlying = playerRabbit != null && playerRabbit.IsFlying;
             bool magnetActive = PowerUps.MagnetEffect.Active != null;
 
             // Roll for which power-up to spawn (mutually exclusive per chunk)
