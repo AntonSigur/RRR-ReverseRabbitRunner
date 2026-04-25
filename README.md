@@ -28,6 +28,7 @@ You're a rabbit. You run backwards through an endless carrot farm. You have two 
 |--------|--------|
 | 🍼 **Birth-Carrot** | Instantly birth baby rabbits that spread across all lanes, hoovering up carrots. They'll slowly get picked off by obstacles and the farmer though. Circle of life. |
 | 🪽 **Wing-Carrot** | Flip around and FLY! Glide forward (the right way for once) and grab airborne carrot lines. Brief taste of freedom. |
+| ✨ **Magnet-Carrot** | A bright gold carrot that turns the rabbit into a hoover for 6 seconds — nearby carrots tear themselves out of the ground and home in. Combo-streak nirvana. |
 | 🤢 **Dirty-Carrot** | Smears your mirrors with mud. Even less visibility than before. Thanks, nature. |
 | ❓ **More to come...** | We have ideas. Terrible, wonderful ideas. |
 
@@ -89,6 +90,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 🚜 Tractor flatbed platforms — jump on top for a carrot jackpot (~100+ bonus carrots!)
 - 🍼 Birth-Carrot power-up — spawns 125 chaotic rainbow baby rabbits that swarm across lanes hoovering up carrots
 - 🪽 Wing-Carrot power-up — backflip into the sky and FLY! Glide forward collecting airborne carrot streams, then backflip home
+- ✨ Magnet-Carrot power-up — gold pickup that auto-collects carrots within a wide radius for ~6s; pairs beautifully with the streak system
 - 🤢 Dirty-Carrot power-up — smears mirrors with mud for reduced visibility (difficulty modifier)
 - 💀 Dramatic 7-stage cinematic death sequence (orbit camera, blood/carrot particles, fork stab)
 - 🔊 Full SFX system — 14 AI-generated sound effects (jump, land, collect, stumble, death, game over, danger warning, etc.)
@@ -167,6 +169,7 @@ Open with `Shift+F12` during gameplay:
 | `fdist [n]` | Show or set farmer distance |
 | `die` | Trigger death sequence |
 | `wing` / `fly` | Activate Wing-Carrot flight |
+| `magnet` | Activate Magnet-Carrot (auto-collect carrots) |
 | `test <name>` | Run automated test (`flight`, `farmer`, `stumble`, `distance`, `all`) |
 | `overlay` | Toggle debug overlay (same as F11) |
 | `clear` | Clear console |

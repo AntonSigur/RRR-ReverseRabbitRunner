@@ -76,6 +76,7 @@ namespace ReverseRabbitRunner.Core
                 ["die"]     = _ => TriggerDeath(),
                 ["wing"]    = _ => TriggerWingCarrot(),
                 ["fly"]     = _ => TriggerWingCarrot(),
+                ["magnet"]  = _ => TriggerMagnetCarrot(),
                 ["test"]    = RunTest,
                 ["overlay"] = _ => DebugOverlay.Toggle(),
             };
@@ -272,6 +273,7 @@ namespace ReverseRabbitRunner.Core
             Log("fstumble     Force farmer stumble", Color.white);
             Log("die          Trigger instant death", Color.white);
             Log("wing/fly     Activate Wing-Carrot flight", Color.white);
+            Log("magnet       Activate Magnet-Carrot (auto-collect)", Color.white);
             Log("test <name>  Run test (flight/farmer/stumble/distance/all)", Color.white);
             Log("overlay      Toggle debug overlay (or F11)", Color.white);
             Log("clear        Clear console", Color.white);
@@ -404,6 +406,25 @@ namespace ReverseRabbitRunner.Core
             var fc = rabbit.gameObject.AddComponent<PowerUps.FlightController>();
             fc.Initialize(rabbit, 6f, 8f);
             Log("Wing-Carrot! FLIGHT MODE!", Color.cyan);
+        }
+
+        private void TriggerMagnetCarrot()
+        {
+            var rabbit = FindFirstObjectByType<Player.RabbitController>();
+            if (rabbit == null) { Log("No rabbit found!", Color.red); return; }
+
+            var existing = rabbit.GetComponent<PowerUps.MagnetEffect>();
+            if (existing != null)
+            {
+                existing.Refresh(6f, 12f);
+                Log("Magnet-Carrot refreshed!", Color.yellow);
+            }
+            else
+            {
+                var me = rabbit.gameObject.AddComponent<PowerUps.MagnetEffect>();
+                me.Initialize(rabbit, 6f, 12f);
+                Log("Magnet-Carrot! Carrots HOMING!", Color.yellow);
+            }
         }
 
         private void FarmerStatus()

@@ -185,6 +185,41 @@ namespace ReverseRabbitRunner.UI
             comboBigStyle.normal.textColor = Color.white;
         }
 
+        private void DrawMagnetHUD(float padding)
+        {
+            var magnet = PowerUps.MagnetEffect.Active;
+            if (magnet == null) return;
+
+            float frac = magnet.DurationFraction;
+            float barW = 220f;
+            float barH = 14f;
+            float x = Screen.width - barW - padding;
+            float y = padding + 80f;     // sits below the score panel
+
+            // Background
+            GUI.color = new Color(0f, 0f, 0f, 0.55f);
+            GUI.DrawTexture(new Rect(x - 4, y - 18, barW + 8, barH + 26), Texture2D.whiteTexture);
+
+            // Label
+            var label = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14,
+                alignment = TextAnchor.MiddleLeft,
+                fontStyle = FontStyle.Bold
+            };
+            label.normal.textColor = new Color(1f, 0.9f, 0.3f);
+            GUI.color = Color.white;
+            GUI.Label(new Rect(x, y - 18, barW, 18), $"\u2728 MAGNET  {magnet.Remaining:0.0}s", label);
+
+            // Bar background
+            GUI.color = new Color(0.2f, 0.18f, 0.05f, 0.9f);
+            GUI.DrawTexture(new Rect(x, y, barW, barH), Texture2D.whiteTexture);
+            // Bar fill (gold)
+            GUI.color = new Color(1f, 0.85f, 0.15f, 0.95f);
+            GUI.DrawTexture(new Rect(x, y, barW * frac, barH), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+        }
+
         private void InitStyles()
         {
             scoreStyle = new GUIStyle(GUI.skin.label)
@@ -304,6 +339,7 @@ namespace ReverseRabbitRunner.UI
             // Combo / streak indicator (under-score, only when active)
             DrawComboHUD(score, padding);
             DrawNearMissPop();
+            DrawMagnetHUD(padding);
             // Speed (below score)
             if (rabbit != null)
             {
