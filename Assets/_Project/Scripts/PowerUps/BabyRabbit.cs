@@ -112,7 +112,7 @@ namespace ReverseRabbitRunner.PowerUps
 
             if (other.CompareTag("Carrot"))
             {
-                Core.ScoreManager.Instance?.AddScore(1);
+                Core.ScoreManager.Instance?.AddScoreAt(1, other.transform.position);
                 Core.AudioManager.Instance?.PlayCollectCarrot();
                 Destroy(other.gameObject);
             }

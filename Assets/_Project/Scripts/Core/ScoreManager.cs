@@ -62,6 +62,12 @@ namespace ReverseRabbitRunner.Core
         /// Args: (comboCount, multiplier, multiplierTierJustIncreased).
         /// </summary>
         public event System.Action<int, int, bool> OnComboChanged;
+        /// <summary>
+        /// Fires after a successful AddScore. Args: (gainedPoints, multiplierApplied, sourceWorldPos).
+        /// sourceWorldPos is <see cref="Vector3.zero"/> when the gain has no spatial anchor
+        /// (e.g. cheat-console adjustments) — listeners should suppress floaters in that case.
+        /// </summary>
+        public event System.Action<int, int, Vector3> OnScoreGained;
 
         private void Awake()
         {
@@ -98,6 +104,20 @@ namespace ReverseRabbitRunner.Core
 
         public void AddScore(int basePoints)
         {
+            AddScoreInternal(basePoints, Vector3.zero, hasPos: false);
+        }
+
+        /// <summary>
+        /// Awards score and emits <see cref="OnScoreGained"/> with a world-space anchor
+        /// so listeners (score floaters, particles) can present the gain at the source.
+        /// </summary>
+        public void AddScoreAt(int basePoints, Vector3 sourceWorldPos)
+        {
+            AddScoreInternal(basePoints, sourceWorldPos, hasPos: true);
+        }
+
+        private void AddScoreInternal(int basePoints, Vector3 sourceWorldPos, bool hasPos)
+        {
             // Bump combo first so the multiplier reflects THIS pickup
             int previousMultiplier = multiplier;
             comboCount++;
@@ -112,6 +132,7 @@ namespace ReverseRabbitRunner.Core
             carrotsCollected++;
             OnScoreChanged?.Invoke(currentScore);
             OnComboChanged?.Invoke(comboCount, multiplier, multiplier > previousMultiplier);
+            OnScoreGained?.Invoke(gained, multiplier, hasPos ? sourceWorldPos : Vector3.zero);
 
             if (currentScore > highScore)
             {
