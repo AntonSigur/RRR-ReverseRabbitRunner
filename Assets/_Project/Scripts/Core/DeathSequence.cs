@@ -415,11 +415,14 @@ namespace ReverseRabbitRunner.Core
             var renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
             foreach (var r in renderers)
             {
-                if (r.material != null && r.material.shader != null
-                    && r.material.shader.name.Contains("Universal Render Pipeline"))
+                // Use sharedMaterial — reading .material would clone the material on
+                // every renderer we inspect, leaking one per object until we found a hit.
+                var shared = r.sharedMaterial;
+                if (shared != null && shared.shader != null
+                    && shared.shader.name.Contains("Universal Render Pipeline"))
                 {
-                    Debug.Log($"[DeathSequence] Using shader from '{r.name}': {r.material.shader.name}");
-                    return new Material(r.material.shader);
+                    Debug.Log($"[DeathSequence] Using shader from '{r.name}': {shared.shader.name}");
+                    return new Material(shared.shader);
                 }
             }
 
