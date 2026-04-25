@@ -13,6 +13,10 @@ namespace ReverseRabbitRunner.UI
         [SerializeField] private Player.RabbitController rabbit;
         [SerializeField] private Enemies.FarmerController farmer;
 
+        // Cached singleton-style references — looked up once instead of per-frame in OnGUI
+        private Core.DeathSequence cachedDeathSeq;
+        private World.ChunkManager cachedChunkMgr;
+
         private GUIStyle scoreStyle;
         private GUIStyle warningStyle;
         private GUIStyle infoStyle;
@@ -36,6 +40,22 @@ namespace ReverseRabbitRunner.UI
                 var farmerObj = GameObject.FindGameObjectWithTag("Farmer");
                 if (farmerObj != null) farmer = farmerObj.GetComponent<Enemies.FarmerController>();
             }
+
+            cachedDeathSeq = FindAnyObjectByType<Core.DeathSequence>();
+            cachedChunkMgr = FindAnyObjectByType<World.ChunkManager>();
+        }
+
+        private Core.DeathSequence GetDeathSeq()
+        {
+            // Re-resolve if scene reloaded and the cached instance was destroyed
+            if (cachedDeathSeq == null) cachedDeathSeq = FindAnyObjectByType<Core.DeathSequence>();
+            return cachedDeathSeq;
+        }
+
+        private World.ChunkManager GetChunkMgr()
+        {
+            if (cachedChunkMgr == null) cachedChunkMgr = FindAnyObjectByType<World.ChunkManager>();
+            return cachedChunkMgr;
         }
 
         private void InitStyles()
@@ -90,6 +110,12 @@ namespace ReverseRabbitRunner.UI
                 if (gm != null && gm.CurrentState == Core.GameManager.GameState.GameOver)
                     return;
 
+                // Block pause while the death cinematic is playing — the cinematic
+                // owns Time.timeScale (slow-motion) and unpause would clobber it back to 1.
+                var ds = GetDeathSeq();
+                if (ds != null && ds.IsPlaying)
+                    return;
+
                 if (showSettings)
                 {
                     showSettings = false;
@@ -114,7 +140,7 @@ namespace ReverseRabbitRunner.UI
             if (!stylesInitialized) InitStyles();
 
             // Hide HUD during death cinematic (except game over overlay after it ends)
-            var deathSeqCheck = FindAnyObjectByType<Core.DeathSequence>();
+            var deathSeqCheck = GetDeathSeq();
             bool deathPlaying = deathSeqCheck != null && deathSeqCheck.IsPlaying;
 
             float padding = 20f;
@@ -197,7 +223,7 @@ namespace ReverseRabbitRunner.UI
             }
 
             // Chunk/Distance debug stats (bottom-left)
-            var chunkMgr = FindAnyObjectByType<World.ChunkManager>();
+            var chunkMgr = GetChunkMgr();
             if (chunkMgr != null)
             {
                 float y = Screen.height - 110;
@@ -339,7 +365,7 @@ namespace ReverseRabbitRunner.UI
             }
 
             // Game Over overlay — but NOT while death sequence is playing
-            var deathSeq = FindAnyObjectByType<Core.DeathSequence>();
+            var deathSeq = GetDeathSeq();
             if (game != null && game.CurrentState == Core.GameManager.GameState.GameOver
                 && (deathSeq == null || !deathSeq.IsPlaying))
             {
