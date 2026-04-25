@@ -258,6 +258,15 @@ namespace ReverseRabbitRunner.Core
             isPlaying = false;
             fadeAlpha = 0f; // Clear black overlay so GameHUD game over screen is visible
 
+            // Restore camera so a no-reload restart leaves things sane.
+            if (mainCamera != null)
+            {
+                if (originalCamParent != null)
+                    mainCamera.transform.SetParent(originalCamParent, true);
+                var camFollow = mainCamera.GetComponent<Player.CameraFollow>();
+                if (camFollow != null) camFollow.enabled = true;
+            }
+
             AudioManager.Instance?.PlayGameOver();
             GameManager.Instance?.GameOver();
         }

@@ -238,23 +238,23 @@ namespace ReverseRabbitRunner.Core
                     fontStyle = FontStyle.Italic,
                     alignment = TextAnchor.LowerRight
                 };
-                songNameStyle.normal.textColor = new Color(1f, 1f, 1f, 0.6f);
+                songNameStyle.normal.textColor = Color.white;
             }
 
-            // Fade out the last second
-            float alpha = Mathf.Clamp01(songNameDisplayTimer);
-            if (!showSongName) // Only fade if not in persistent mode
-            {
-                var c = songNameStyle.normal.textColor;
-                c.a = alpha * 0.6f;
-                songNameStyle.normal.textColor = c;
-            }
+            // Fade out the last second using GUI.color so we don't mutate the
+            // style's textColor every frame (which accumulates float error and
+            // can leave the label permanently dim after a fade).
+            float alpha = showSongName ? 0.6f : Mathf.Clamp01(songNameDisplayTimer) * 0.6f;
+            var prev = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, alpha);
 
             GUI.Label(
                 new Rect(0, Screen.height - 40, Screen.width - 15, 30),
                 $"♫ {currentTrackName}",
                 songNameStyle
             );
+
+            GUI.color = prev;
         }
 
         // --- Volume Control ---
