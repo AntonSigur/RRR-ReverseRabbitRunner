@@ -26,7 +26,37 @@ namespace ReverseRabbitRunner.Player
         private bool isInFlightMode;
         private Vector3 normalLookOffset = new Vector3(0, 0.5f, 5f);
 
+        // Screen shake state
+        private float shakeIntensity;
+        private float shakeRemaining;
+        private float shakeDuration;
+        private static CameraFollow instance;
+        public static CameraFollow Instance => instance;
+
         public void SetFlightMode(bool flight) => isInFlightMode = flight;
+
+        /// <summary>
+        /// Trigger a screen shake. New shakes override weaker ones in progress.
+        /// Intensity is in world units (0.05 = subtle, 0.4 = big hit).
+        /// </summary>
+        public void Shake(float intensity, float duration)
+        {
+            // Don't downgrade an in-progress stronger shake
+            if (intensity * duration < shakeIntensity * shakeRemaining) return;
+            shakeIntensity = intensity;
+            shakeDuration = duration;
+            shakeRemaining = duration;
+        }
+
+        private void Awake()
+        {
+            instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this) instance = null;
+        }
 
         private void Start()
         {
@@ -53,6 +83,19 @@ namespace ReverseRabbitRunner.Player
             Vector3 lookOffset = isInFlightMode ? flightLookOffset : normalLookOffset;
             Vector3 lookTarget = target.position + lookOffset;
             transform.LookAt(lookTarget);
+
+            // Apply screen shake AFTER position + look so it's a pure visual perturbation
+            if (shakeRemaining > 0f)
+            {
+                shakeRemaining -= Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(shakeRemaining / Mathf.Max(0.0001f, shakeDuration));
+                float falloff = t * t;
+                Vector3 jitter = new Vector3(
+                    (Random.value - 0.5f) * 2f,
+                    (Random.value - 0.5f) * 2f,
+                    0f) * shakeIntensity * falloff;
+                transform.position += transform.right * jitter.x + transform.up * jitter.y;
+            }
 
             // Speed-based FOV increase
             if (cam != null)

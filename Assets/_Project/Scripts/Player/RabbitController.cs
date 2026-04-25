@@ -71,10 +71,13 @@ namespace ReverseRabbitRunner.Player
         public bool IsStumbling => isStumbling;
         public bool IsFlying => isFlying;
         public bool InDangerWindow => (Time.time - lastStumbleTime) < stumbleDangerWindow;
+        public float LastStumbleTime => lastStumbleTime;
 
         public event System.Action OnHitObstacle;
         public event System.Action<float> OnStumble;
         public event System.Action<GameObject> OnCollectCarrot;
+        /// <summary>Fires when the rabbit dodges or jump-clears an obstacle without stumbling.</summary>
+        public event System.Action<GameObject> OnNearMiss;
 
         private void Awake()
         {
@@ -86,6 +89,38 @@ namespace ReverseRabbitRunner.Player
             // Find "Body" child for tilt animation
             var body = transform.Find("Body");
             if (body != null) bodyTransform = body;
+
+            BuildNearMissZone();
+        }
+
+        private void BuildNearMissZone()
+        {
+            // Wider trigger zone surrounding the rabbit — detects obstacles that
+            // pass close by without actually colliding. A NearMissDetector child
+            // forwards "obstacle exited zone alive" events as OnNearMiss.
+            var zone = new GameObject("NearMissZone");
+            zone.transform.SetParent(transform, false);
+            zone.transform.localPosition = Vector3.zero;
+            zone.layer = gameObject.layer;
+
+            var box = zone.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            // Wider than rabbit's collider but narrower than two lanes — so an obstacle
+            // in an *adjacent* lane only registers a near-miss if the player swerved
+            // close to the boundary, not if they were comfortably one full lane over.
+            box.size = new Vector3(4.4f, 2.6f, 1.8f);
+            box.center = new Vector3(0f, 0.6f, 0f);
+
+            // A trigger needs a Rigidbody on one of the participants to fire OnTrigger
+            // events with CharacterController-only objects. Mark it kinematic so it
+            // doesn't influence physics.
+            var rb = zone.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+
+            var detector = zone.AddComponent<NearMissDetector>();
+            detector.rabbit = this;
+            detector.OnNearMiss += go => OnNearMiss?.Invoke(go);
         }
 
         private void OnEnable()
@@ -405,6 +440,7 @@ namespace ReverseRabbitRunner.Player
 
                     if (rabbitFeetY >= obstacleTopY - 0.2f)
                     {
+                        OnNearMiss?.Invoke(other.gameObject);
                         if (isSmall) Destroy(other.gameObject);
                         return;
                     }
