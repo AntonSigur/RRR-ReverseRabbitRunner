@@ -681,6 +681,20 @@ namespace ReverseRabbitRunner.UI
                     if (Core.MusicPlayer.Instance != null)
                         Core.MusicPlayer.Instance.Volume = musicVol;
 
+                    // Skip-track button — only when the music player exists and
+                    // has a playlist loaded. Disabled-look (greyed) otherwise.
+                    var music = Core.MusicPlayer.Instance;
+                    bool canSkip = music != null && music.HasPlaylist;
+                    var prevEnabled = GUI.enabled;
+                    GUI.enabled = canSkip;
+                    var skipRect = new Rect(cx + 160, Screen.height * 0.61f, 100, 26);
+                    if (GUI.Button(skipRect, "⏭  Skip"))
+                    {
+                        Core.AudioManager.Instance?.PlayMenuClick();
+                        music?.SkipTrack();
+                    }
+                    GUI.enabled = prevEnabled;
+
                     // Accessibility --------------------------------------------
                     infoStyle.fontSize = 22;
                     GUI.Label(new Rect(0, Screen.height * 0.67f, Screen.width, 26), "Accessibility", infoStyle);
