@@ -16,6 +16,7 @@ namespace ReverseRabbitRunner.UI
         private const float FadeOut = 0.5f;
 
         private string currentLabel;
+        private string currentSub = "MILESTONE REACHED";
         private float startedAt;
         private bool active;
 
@@ -50,13 +51,22 @@ namespace ReverseRabbitRunner.UI
 
         private void HandleMilestone(int meters, string label)
         {
+            Trigger(label, "MILESTONE REACHED", meters >= 5000 ? 2 : 1);
+        }
+
+        /// <summary>
+        /// Trigger the celebratory banner with a custom title + sub-line. Intended for
+        /// other one-shot reward events (e.g. surpassing personal best distance).
+        /// chimeIndex is forwarded to <see cref="Core.AudioManager.PlayCollectSpecial"/>.
+        /// </summary>
+        public void Trigger(string label, string sub, int chimeIndex = 1)
+        {
             currentLabel = label;
+            currentSub = string.IsNullOrEmpty(sub) ? "" : sub;
             startedAt = Time.unscaledTime;
             active = true;
 
-            // Reuse the "collect special" chime; cheaper than adding a new clip
-            // and it already fits the arcade feel.
-            Core.AudioManager.Instance?.PlayCollectSpecial(meters >= 5000 ? 2 : 1);
+            Core.AudioManager.Instance?.PlayCollectSpecial(chimeIndex);
         }
 
         private void EnsureStyles()
@@ -118,7 +128,7 @@ namespace ReverseRabbitRunner.UI
             GUI.Label(new Rect(cx - w * 0.5f, cy - h * 0.5f, w, h * 0.7f), currentLabel, mainStyle);
 
             subStyle.normal.textColor = new Color(1f, 1f, 1f, 0.85f * a);
-            GUI.Label(new Rect(cx - w * 0.5f, cy + h * 0.15f, w, 30f), "MILESTONE REACHED", subStyle);
+            GUI.Label(new Rect(cx - w * 0.5f, cy + h * 0.15f, w, 30f), currentSub, subStyle);
 
             GUI.matrix = matrix;
             GUI.color = Color.white;
