@@ -551,7 +551,7 @@ namespace ReverseRabbitRunner.UI
                     GUI.Label(new Rect(0, Screen.height * 0.40f, Screen.width, 60),
                         "PC: A/D or ←/→ = switch lanes | Space/W/↑ = jump | Numpad = mirrors | Esc/Q = pause", infoStyle);
                     GUI.Label(new Rect(0, Screen.height * 0.46f, Screen.width, 30),
-                        "Mobile: Swipe left/right to switch lanes", infoStyle);
+                        "Mobile: Swipe lanes • Swipe up or tap to jump", infoStyle);
 
                     GUI.Label(new Rect(0, Screen.height * 0.55f, Screen.width, 30), "Master Volume", infoStyle);
                     float vol = GUI.HorizontalSlider(

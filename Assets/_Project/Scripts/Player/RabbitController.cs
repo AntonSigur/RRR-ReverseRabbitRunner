@@ -219,12 +219,57 @@ namespace ReverseRabbitRunner.Player
         {
             moveAction?.Enable();
             jumpAction?.Enable();
+            SubscribeTouchInput();
         }
 
         private void OnDisable()
         {
             moveAction?.Disable();
             jumpAction?.Disable();
+            UnsubscribeTouchInput();
+        }
+
+        private bool touchInputBound;
+
+        private void SubscribeTouchInput()
+        {
+            var im = Core.InputManager.Instance;
+            if (im == null || touchInputBound) return;
+            im.OnSwipeLeft  += HandleSwipeLeft;
+            im.OnSwipeRight += HandleSwipeRight;
+            im.OnSwipeUp    += HandleTouchJump;
+            im.OnTap        += HandleTouchJump;
+            touchInputBound = true;
+        }
+
+        private void UnsubscribeTouchInput()
+        {
+            var im = Core.InputManager.Instance;
+            if (im == null || !touchInputBound) return;
+            im.OnSwipeLeft  -= HandleSwipeLeft;
+            im.OnSwipeRight -= HandleSwipeRight;
+            im.OnSwipeUp    -= HandleTouchJump;
+            im.OnTap        -= HandleTouchJump;
+            touchInputBound = false;
+        }
+
+        private void HandleSwipeLeft()
+        {
+            if (!isAlive) return;
+            MoveLeft();
+        }
+
+        private void HandleSwipeRight()
+        {
+            if (!isAlive) return;
+            MoveRight();
+        }
+
+        private void HandleTouchJump()
+        {
+            if (!isAlive) return;
+            if (controller != null && controller.isGrounded && !isFlying)
+                Jump();
         }
 
         private void OnDestroy()
@@ -242,6 +287,10 @@ namespace ReverseRabbitRunner.Player
 
         private void Update()
         {
+            // Lazy subscribe — InputManager auto-spawns via RuntimeInitializeOnLoad,
+            // which may race with this controller's OnEnable on first scene load.
+            if (!touchInputBound) SubscribeTouchInput();
+
             if (!isAlive) return;
 
             // DEBUG: Shift+1 = instant death (farmer catches up and kills)
@@ -367,12 +416,6 @@ namespace ReverseRabbitRunner.Player
 
             if (jumpPressed && controller.isGrounded && !isFlying)
                 Jump();
-
-            // Touch swipe (using Touchscreen from Input System)
-            if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame)
-            {
-                // Store start position handled via pointer
-            }
         }
 
         private void Jump()
