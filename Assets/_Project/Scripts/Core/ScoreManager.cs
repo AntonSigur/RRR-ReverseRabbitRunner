@@ -25,6 +25,7 @@ namespace ReverseRabbitRunner.Core
         private int highScore;
         private int runStartHighScore;
         private int carrotsCollected;
+        private int nearMissCount;
         private int maxComboReached;
         private int maxMultiplierReached = 1;
         private int maxTierReached;
@@ -42,6 +43,7 @@ namespace ReverseRabbitRunner.Core
         public int CurrentScore => currentScore;
         public int HighScore => highScore;
         public int CarrotsCollected => carrotsCollected;
+        public int NearMissCount => nearMissCount;
         public int ComboCount => comboCount;
         public int Multiplier => multiplier;
         public int MaxComboReached => maxComboReached;
@@ -158,6 +160,7 @@ namespace ReverseRabbitRunner.Core
         {
             currentScore = 0;
             carrotsCollected = 0;
+            nearMissCount = 0;
             currentRunDistance = 0f;
             maxComboReached = 0;
             maxMultiplierReached = 1;
@@ -196,6 +199,12 @@ namespace ReverseRabbitRunner.Core
         }
 
         public event System.Action OnRunCommitted;
+
+        /// <summary>Tally a near-miss event for the current run. Reset by <see cref="ResetScore"/>.</summary>
+        public void RegisterNearMiss()
+        {
+            nearMissCount++;
+        }
 
         private int ComputeMultiplier(int combo)
         {
