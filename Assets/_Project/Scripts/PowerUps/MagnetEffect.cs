@@ -25,6 +25,11 @@ namespace ReverseRabbitRunner.PowerUps
         // Per-carrot momentum so the home-in feels physical, not jumpy
         private readonly Dictionary<int, float> carrotSpeeds = new();
 
+        // Aura visual: pulsing translucent gold sphere parented to the rabbit
+        private GameObject aura;
+        private Material auraMat;
+        private MeshRenderer auraRenderer;
+
         // Static so HUD / DebugOverlay can show remaining time
         public static MagnetEffect Active { get; private set; }
         public float Remaining => remaining;
@@ -40,6 +45,7 @@ namespace ReverseRabbitRunner.PowerUps
             originalDuration = duration;
             radius = radiusUnits;
             Active = this;
+            EnsureAura();
             OnMagnetActivated?.Invoke();
         }
 
@@ -49,6 +55,7 @@ namespace ReverseRabbitRunner.PowerUps
             remaining = Mathf.Max(remaining, duration);
             originalDuration = Mathf.Max(originalDuration, duration);
             radius = Mathf.Max(radius, radiusUnits);
+            EnsureAura();
             OnMagnetActivated?.Invoke();
         }
 
@@ -68,6 +75,56 @@ namespace ReverseRabbitRunner.PowerUps
             }
 
             PullCarrots();
+            UpdateAura();
+        }
+
+        private void EnsureAura()
+        {
+            if (aura != null || rabbit == null) return;
+
+            aura = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            aura.name = "MagnetAura";
+            // No collider — purely visual
+            var col = aura.GetComponent<Collider>();
+            if (col != null) Destroy(col);
+            aura.transform.SetParent(rabbit.transform, false);
+            aura.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+            aura.transform.localScale = Vector3.one * 2.4f;
+
+            auraRenderer = aura.GetComponent<MeshRenderer>();
+            // Try URP transparent shader, fall back to standard.
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+            auraMat = new Material(shader);
+            auraMat.color = new Color(1f, 0.82f, 0.25f, 0.18f);
+            // Enable transparency where supported
+            auraMat.SetFloat("_Surface", 1f); // URP transparent
+            auraMat.SetFloat("_Blend", 0f);   // alpha
+            auraMat.renderQueue = 3000;
+            auraRenderer.sharedMaterial = auraMat;
+            auraRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            auraRenderer.receiveShadows = false;
+        }
+
+        private void UpdateAura()
+        {
+            if (aura == null || auraMat == null) return;
+
+            // Pulse scale + alpha based on time + remaining duration
+            float frac = DurationFraction; // 0..1, fades as time runs out
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4.5f);
+            float baseScale = 2.4f + pulse * 0.35f;
+            aura.transform.localScale = Vector3.one * baseScale;
+
+            // Last 1.5s blink faster to telegraph expiry
+            float urgency = remaining < 1.5f
+                ? (0.5f + 0.5f * Mathf.Sin(Time.time * 18f))
+                : 1f;
+
+            float alpha = Mathf.Lerp(0.06f, 0.28f, pulse) * Mathf.Lerp(0.4f, 1f, frac) * urgency;
+            var c = new Color(1f, 0.82f, 0.25f, alpha);
+            auraMat.color = c;
+            // Some shaders read _BaseColor instead
+            if (auraMat.HasProperty("_BaseColor")) auraMat.SetColor("_BaseColor", c);
         }
 
         private void PullCarrots()
@@ -116,12 +173,21 @@ namespace ReverseRabbitRunner.PowerUps
         private void EndEffect()
         {
             if (Active == this) Active = null;
+            DestroyAura();
             Destroy(this);
         }
 
         private void OnDestroy()
         {
             if (Active == this) Active = null;
+            DestroyAura();
+        }
+
+        private void DestroyAura()
+        {
+            if (aura != null) { Destroy(aura); aura = null; }
+            if (auraMat != null) { Destroy(auraMat); auraMat = null; }
+            auraRenderer = null;
         }
     }
 }
