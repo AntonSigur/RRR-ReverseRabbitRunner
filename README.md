@@ -86,7 +86,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 🌍 Chunk-based infinite world with 3 themed biomes (Concrete, Snow+Mud, Grass)
 - 🔄 Origin shifting for unlimited distance without floating-point issues
 - 🚧 4 obstacle types (farm crates, round hay bales, fence posts, scarecrows) with stumble mechanic
-- 📈 Difficulty ramp — obstacles increase, farmer gets faster over time
+- 📈 Difficulty ramp — tier-based escalation: speed targets step up by distance, farmer rests closer at higher tiers, obstacle density scales. "TIER UP" celebration with camera punch on each step.
 - 🚜 Tractor flatbed platforms — jump on top for a carrot jackpot (~100+ bonus carrots!)
 - 🍼 Birth-Carrot power-up — spawns 125 chaotic rainbow baby rabbits that swarm across lanes hoovering up carrots
 - 🪽 Wing-Carrot power-up — backflip into the sky and FLY! Glide forward collecting airborne carrot streams, then backflip home

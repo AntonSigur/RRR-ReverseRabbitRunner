@@ -656,6 +656,10 @@ namespace ReverseRabbitRunner.Editor
             smObj.transform.parent = managers.transform;
             smObj.AddComponent<Core.ScoreManager>();
 
+            GameObject diffObj = new GameObject("DifficultyManager");
+            diffObj.transform.parent = managers.transform;
+            diffObj.AddComponent<Core.DifficultyManager>();
+
             GameObject imObj = new GameObject("InputManager");
             imObj.transform.parent = managers.transform;
             imObj.AddComponent<Core.InputManager>();

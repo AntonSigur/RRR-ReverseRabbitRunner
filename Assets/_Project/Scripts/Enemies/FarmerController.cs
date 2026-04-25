@@ -69,9 +69,21 @@ namespace ReverseRabbitRunner.Enemies
         // === Public State (for debug overlay & tests) ===
         public float CurrentDistance => currentDistance;
         public float BaseDistance => baseDistance;
+        /// <summary>baseDistance after the difficulty multiplier (closer at higher tiers).</summary>
+        public float EffectiveBaseDistance
+        {
+            get
+            {
+                float mult = Core.DifficultyManager.Instance != null
+                    ? Core.DifficultyManager.Instance.FarmerClosenessMultiplier
+                    : 1f;
+                // Never let the resting distance drop below the catch threshold.
+                return Mathf.Max(catchDistance + 0.25f, baseDistance * mult);
+            }
+        }
         public float FadeDistance => fadeDistance;
         public float MaxDistance => maxDistance;
-        public float NormalizedThreat => 1f - Mathf.Clamp01(currentDistance / baseDistance);
+        public float NormalizedThreat => 1f - Mathf.Clamp01(currentDistance / EffectiveBaseDistance);
         public bool IsStumbling => isFarmerStumbling;
         public bool IsVisible => isVisible;
         public bool IsCatching => isCatching;
@@ -91,7 +103,7 @@ namespace ReverseRabbitRunner.Enemies
 
         private void Start()
         {
-            currentDistance = baseDistance;
+            currentDistance = EffectiveBaseDistance;
             targetLane = laneCount / 2;
 
             if (playerTransform == null)
@@ -153,13 +165,14 @@ namespace ReverseRabbitRunner.Enemies
                     isFarmerStumbling = false;
             }
 
-            // Z distance: recover toward baseDistance
-            float recoveryRate = (baseDistance - catchDistance) / Mathf.Max(farmerRecoveryTime, 0.1f);
+            // Z distance: recover toward effective base (which scales with difficulty)
+            float effectiveBase = EffectiveBaseDistance;
+            float recoveryRate = (effectiveBase - catchDistance) / Mathf.Max(farmerRecoveryTime, 0.1f);
             if (isFarmerStumbling)
                 recoveryRate *= 0.2f;
             else if (rabbitFlying)
                 recoveryRate *= 2f; // Farmer runs freely during flight — faster recovery
-            currentDistance = Mathf.MoveTowards(currentDistance, baseDistance, recoveryRate * Time.deltaTime);
+            currentDistance = Mathf.MoveTowards(currentDistance, effectiveBase, recoveryRate * Time.deltaTime);
 
             // Lateral movement
             float laneX = (targetLane - laneCount / 2) * laneWidth;
@@ -231,7 +244,7 @@ namespace ReverseRabbitRunner.Enemies
                     tooFarTimer += Time.deltaTime;
                     if (tooFarTimer >= reappearDelay)
                     {
-                        currentDistance = baseDistance;
+                        currentDistance = EffectiveBaseDistance;
                         tooFarTimer = 0f;
                         isReappearing = false;
                         isFarmerStumbling = false;
