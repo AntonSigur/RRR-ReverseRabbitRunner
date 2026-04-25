@@ -51,6 +51,9 @@ namespace ReverseRabbitRunner.Core
         private Transform cachedFarmer;
         private bool wasGrounded = true;
         private bool subscribedToRabbit;
+        private bool subscribedToScore;
+        private bool subscribedToGame;
+        private bool subscribedToMagnet;
 
         private void Awake()
         {
@@ -141,6 +144,9 @@ namespace ReverseRabbitRunner.Core
         private void Start()
         {
             TrySubscribeToRabbit();
+            TrySubscribeToScore();
+            TrySubscribeToGame();
+            TrySubscribeToMagnet();
         }
 
         private void Update()
@@ -152,6 +158,9 @@ namespace ReverseRabbitRunner.Core
                 if (cachedRabbit == null) subscribedToRabbit = false;
                 TrySubscribeToRabbit();
             }
+            if (!subscribedToScore) TrySubscribeToScore();
+            if (!subscribedToGame) TrySubscribeToGame();
+            if (!subscribedToMagnet) TrySubscribeToMagnet();
 
             // Detect landing (was airborne, now grounded)
             if (cachedRabbit != null && cachedRabbit.IsAlive)
@@ -178,7 +187,31 @@ namespace ReverseRabbitRunner.Core
 
             cachedRabbit.OnCollectCarrot += OnCollectCarrot;
             cachedRabbit.OnStumble += OnStumble;
+            cachedRabbit.OnNearMiss += OnNearMiss;
             subscribedToRabbit = true;
+        }
+
+        private void TrySubscribeToScore()
+        {
+            var score = ScoreManager.Instance;
+            if (score == null) return;
+            score.OnComboChanged += OnComboChanged;
+            subscribedToScore = true;
+        }
+
+        private void TrySubscribeToGame()
+        {
+            var game = GameManager.Instance;
+            if (game == null) return;
+            game.OnGameStateChanged += OnGameStateChanged;
+            subscribedToGame = true;
+        }
+
+        private void TrySubscribeToMagnet()
+        {
+            // Magnet has a static activation hook; subscribe lazily.
+            PowerUps.MagnetEffect.OnMagnetActivated += OnMagnetActivated;
+            subscribedToMagnet = true;
         }
 
         private void OnDestroy()
@@ -189,7 +222,17 @@ namespace ReverseRabbitRunner.Core
             {
                 cachedRabbit.OnCollectCarrot -= OnCollectCarrot;
                 cachedRabbit.OnStumble -= OnStumble;
+                cachedRabbit.OnNearMiss -= OnNearMiss;
             }
+
+            if (subscribedToScore && ScoreManager.Instance != null)
+                ScoreManager.Instance.OnComboChanged -= OnComboChanged;
+
+            if (subscribedToGame && GameManager.Instance != null)
+                GameManager.Instance.OnGameStateChanged -= OnGameStateChanged;
+
+            if (subscribedToMagnet)
+                PowerUps.MagnetEffect.OnMagnetActivated -= OnMagnetActivated;
         }
 
         // --- Event Handlers ---
@@ -259,6 +302,46 @@ namespace ReverseRabbitRunner.Core
             // Use tall stumble sound for big penalties, small for minor
             var clip = penalty >= 3f ? stumbleTall : stumbleSmall;
             PlaySFX(clip, 1f);
+        }
+
+        private void OnNearMiss(GameObject obstacle)
+        {
+            PlaySFX(ProceduralSfx.NearMissWhoosh(), 0.7f);
+        }
+
+        private void OnComboChanged(int comboCount, int multiplier, bool tierUp)
+        {
+            if (!tierUp) return;
+            // multiplier x2 = tier 0, x3 = 1, ...
+            int tierIdx = Mathf.Max(0, multiplier - 2);
+            PlaySFX(ProceduralSfx.ComboTierSting(tierIdx), 0.85f);
+        }
+
+        private void OnMagnetActivated()
+        {
+            PlaySFX(ProceduralSfx.MagnetWhoosh(), 0.85f);
+        }
+
+        private bool gameOverFanfarePending;
+        private void OnGameStateChanged(GameManager.GameState state)
+        {
+            if (state == GameManager.GameState.GameOver)
+            {
+                // Wait one frame to avoid stomping on death stab
+                gameOverFanfarePending = true;
+                StartCoroutine(PlayFanfareDelayed(0.55f));
+            }
+        }
+
+        private System.Collections.IEnumerator PlayFanfareDelayed(float delay)
+        {
+            float t = 0f;
+            while (t < delay) { t += Time.unscaledDeltaTime; yield return null; }
+            if (gameOverFanfarePending)
+            {
+                gameOverFanfarePending = false;
+                PlaySFX(ProceduralSfx.GameOverFanfare(), 0.9f);
+            }
         }
 
         // --- Public Play Methods (called from other scripts) ---

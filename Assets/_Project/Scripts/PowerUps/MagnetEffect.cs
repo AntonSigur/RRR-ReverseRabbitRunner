@@ -30,6 +30,9 @@ namespace ReverseRabbitRunner.PowerUps
         public float Remaining => remaining;
         public float DurationFraction => originalDuration <= 0f ? 0f : Mathf.Clamp01(remaining / originalDuration);
 
+        /// <summary>Fires whenever a magnet is freshly activated or refreshed (for SFX/VFX).</summary>
+        public static event System.Action OnMagnetActivated;
+
         public void Initialize(Player.RabbitController r, float duration, float radiusUnits)
         {
             rabbit = r;
@@ -37,6 +40,7 @@ namespace ReverseRabbitRunner.PowerUps
             originalDuration = duration;
             radius = radiusUnits;
             Active = this;
+            OnMagnetActivated?.Invoke();
         }
 
         public void Refresh(float duration, float radiusUnits)
@@ -45,6 +49,7 @@ namespace ReverseRabbitRunner.PowerUps
             remaining = Mathf.Max(remaining, duration);
             originalDuration = Mathf.Max(originalDuration, duration);
             radius = Mathf.Max(radius, radiusUnits);
+            OnMagnetActivated?.Invoke();
         }
 
         private void Update()
