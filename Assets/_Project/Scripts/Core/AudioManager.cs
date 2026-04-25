@@ -466,8 +466,11 @@ namespace ReverseRabbitRunner.Core
             get => sfxVolume;
             set
             {
-                sfxVolume = Mathf.Clamp01(value);
+                float v = Mathf.Clamp01(value);
+                if (Mathf.Approximately(sfxVolume, v)) return;
+                sfxVolume = v;
                 PlayerPrefs.SetFloat("SFXVolume", sfxVolume);
+                volumePrefsDirty = true;
             }
         }
 
@@ -476,11 +479,24 @@ namespace ReverseRabbitRunner.Core
             get => masterVolume;
             set
             {
-                masterVolume = Mathf.Clamp01(value);
+                float v = Mathf.Clamp01(value);
+                if (Mathf.Approximately(masterVolume, v))
+                {
+                    AudioListener.volume = masterVolume;
+                    return;
+                }
+                masterVolume = v;
                 AudioListener.volume = masterVolume;
                 PlayerPrefs.SetFloat("MasterVolume", masterVolume);
+                volumePrefsDirty = true;
             }
         }
+
+        // Centralized "settings need flushing to disk" flag. Sliders that mutate
+        // SFXVolume/MasterVolume every frame keep the in-memory PlayerPrefs hot;
+        // this flag lets UI / lifecycle hooks call FlushVolumePrefs() exactly once
+        // when the user commits a change rather than thrashing PlayerPrefs.Save().
+        private bool volumePrefsDirty;
 
         /// <summary>
         /// Load saved volume preferences.
@@ -490,6 +506,33 @@ namespace ReverseRabbitRunner.Core
             sfxVolume = PlayerPrefs.GetFloat("SFXVolume", 1f);
             masterVolume = PlayerPrefs.GetFloat("MasterVolume", 1f);
             AudioListener.volume = masterVolume;
+            volumePrefsDirty = false;
+        }
+
+        /// <summary>
+        /// Persist any pending volume changes to disk. Cheap no-op when clean.
+        /// Call from UI on slider release, or rely on the lifecycle hooks below.
+        /// </summary>
+        public void FlushVolumePrefs()
+        {
+            if (!volumePrefsDirty) return;
+            PlayerPrefs.Save();
+            volumePrefsDirty = false;
+        }
+
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause) FlushVolumePrefs();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus) FlushVolumePrefs();
+        }
+
+        private void OnApplicationQuit()
+        {
+            FlushVolumePrefs();
         }
     }
 }

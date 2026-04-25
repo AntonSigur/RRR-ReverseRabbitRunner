@@ -12,13 +12,21 @@ namespace ReverseRabbitRunner.UI
     {
         private Canvas canvas;
         private GameObject settingsPanel;
-        private Slider volumeSlider;
+        private Slider masterSlider;
+        private Slider sfxSlider;
+        private Slider musicSlider;
+        private Text deathFxButtonLabel;
 
         private void Start()
         {
             Time.timeScale = 1f;
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
+
+            // Apply saved master volume immediately so the menu honours the user's
+            // last setting (AudioManager isn't in the MainMenu scene).
+            AudioListener.volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
+
             BuildUI();
         }
 
@@ -72,35 +80,86 @@ namespace ReverseRabbitRunner.UI
             RectTransform panelRect = settingsPanel.GetComponent<RectTransform>();
             panelRect.anchorMin = new Vector2(0.5f, 0.5f);
             panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-            panelRect.sizeDelta = new Vector2(500, 400);
+            panelRect.sizeDelta = new Vector2(560, 620);
             panelRect.anchoredPosition = Vector2.zero;
 
             CreateText(settingsPanel.transform, "SettingsTitle", "SETTINGS",
-                new Vector2(0, 150), 36, Color.white, FontStyle.Bold);
+                new Vector2(0, 270), 36, Color.white, FontStyle.Bold);
 
-            // Volume
-            CreateText(settingsPanel.transform, "VolumeLabel", "Master Volume",
-                new Vector2(0, 80), 22, new Color(0.8f, 0.8f, 0.8f));
+            // Master Volume
+            CreateText(settingsPanel.transform, "MasterLabel", "Master Volume",
+                new Vector2(0, 210), 20, new Color(0.85f, 0.85f, 0.85f));
+            masterSlider = BuildSlider(settingsPanel.transform, "MasterSlider",
+                new Vector2(0, 175), PlayerPrefs.GetFloat("MasterVolume", 1f),
+                new Color(1f, 0.6f, 0.1f), OnMasterVolumeChanged);
 
-            GameObject sliderObj = new GameObject("VolumeSlider");
-            sliderObj.transform.SetParent(settingsPanel.transform, false);
+            // SFX Volume
+            CreateText(settingsPanel.transform, "SFXLabel", "SFX Volume",
+                new Vector2(0, 130), 20, new Color(0.85f, 0.85f, 0.85f));
+            sfxSlider = BuildSlider(settingsPanel.transform, "SFXSlider",
+                new Vector2(0, 95), PlayerPrefs.GetFloat("SFXVolume", 1f),
+                new Color(0.4f, 0.85f, 0.5f), OnSFXVolumeChanged);
+
+            // Music Volume
+            CreateText(settingsPanel.transform, "MusicLabel", "Music Volume",
+                new Vector2(0, 50), 20, new Color(0.85f, 0.85f, 0.85f));
+            musicSlider = BuildSlider(settingsPanel.transform, "MusicSlider",
+                new Vector2(0, 15), PlayerPrefs.GetFloat("MusicVolume", 0.35f),
+                new Color(0.5f, 0.7f, 1f), OnMusicVolumeChanged);
+
+            // Death FX toggle button
+            CreateText(settingsPanel.transform, "DeathFxLabel", "Death Effect",
+                new Vector2(0, -35), 20, new Color(0.85f, 0.85f, 0.85f));
+            var deathBtn = CreateButton(settingsPanel.transform, "DeathFxButton",
+                BuildDeathFxLabel(), new Vector2(0, -75), OnToggleDeathFx,
+                new Color(0.35f, 0.2f, 0.25f), Color.white, 20);
+            deathFxButtonLabel = deathBtn.GetComponentInChildren<Text>();
+
+            // Controls hint
+            CreateText(settingsPanel.transform, "ControlsTitle", "CONTROLS",
+                new Vector2(0, -135), 18, new Color(0.7f, 0.7f, 0.7f), FontStyle.Bold);
+            CreateText(settingsPanel.transform, "ControlsPC",
+                "PC: A/D or ←/→ lanes  •  Space/W/↑ jump  •  Esc/Q pause",
+                new Vector2(0, -165), 15, new Color(0.6f, 0.6f, 0.6f));
+            CreateText(settingsPanel.transform, "ControlsMobile",
+                "Mobile: Swipe lanes  •  Tap to jump",
+                new Vector2(0, -190), 15, new Color(0.6f, 0.6f, 0.6f));
+
+            // Back button
+            CreateButton(settingsPanel.transform, "BackButton", "← BACK",
+                new Vector2(0, -255), OnSettingsBack,
+                new Color(0.3f, 0.3f, 0.4f), Color.white, 24);
+
+            settingsPanel.SetActive(false);
+        }
+
+        private static string BuildDeathFxLabel()
+        {
+            return Core.DeathSequence.UseBloodParticles
+                ? "🩸 Blood (click to change)"
+                : "🥕 Carrots (click to change)";
+        }
+
+        private Slider BuildSlider(Transform parent, string name, Vector2 pos,
+            float initialValue, Color fillColor, UnityEngine.Events.UnityAction<float> onChanged)
+        {
+            GameObject sliderObj = new GameObject(name);
+            sliderObj.transform.SetParent(parent, false);
             RectTransform sliderRect = sliderObj.AddComponent<RectTransform>();
             sliderRect.anchorMin = new Vector2(0.5f, 0.5f);
             sliderRect.anchorMax = new Vector2(0.5f, 0.5f);
-            sliderRect.sizeDelta = new Vector2(300, 30);
-            sliderRect.anchoredPosition = new Vector2(0, 40);
+            sliderRect.sizeDelta = new Vector2(360, 28);
+            sliderRect.anchoredPosition = pos;
 
-            // Slider background
             GameObject sliderBg = new GameObject("Background");
             sliderBg.transform.SetParent(sliderObj.transform, false);
             Image bgImg = sliderBg.AddComponent<Image>();
-            bgImg.color = new Color(0.2f, 0.2f, 0.2f);
+            bgImg.color = new Color(0.18f, 0.18f, 0.22f);
             RectTransform bgR = sliderBg.GetComponent<RectTransform>();
             bgR.anchorMin = Vector2.zero;
             bgR.anchorMax = Vector2.one;
             bgR.sizeDelta = Vector2.zero;
 
-            // Fill area
             GameObject fillArea = new GameObject("Fill Area");
             fillArea.transform.SetParent(sliderObj.transform, false);
             RectTransform fillAreaRect = fillArea.AddComponent<RectTransform>();
@@ -111,13 +170,12 @@ namespace ReverseRabbitRunner.UI
             GameObject fill = new GameObject("Fill");
             fill.transform.SetParent(fillArea.transform, false);
             Image fillImg = fill.AddComponent<Image>();
-            fillImg.color = new Color(1f, 0.6f, 0.1f);
+            fillImg.color = fillColor;
             RectTransform fillRect = fill.GetComponent<RectTransform>();
             fillRect.anchorMin = Vector2.zero;
             fillRect.anchorMax = Vector2.one;
             fillRect.sizeDelta = Vector2.zero;
 
-            // Handle
             GameObject handleArea = new GameObject("Handle Slide Area");
             handleArea.transform.SetParent(sliderObj.transform, false);
             RectTransform handleAreaRect = handleArea.AddComponent<RectTransform>();
@@ -132,34 +190,21 @@ namespace ReverseRabbitRunner.UI
             RectTransform handleRect = handle.GetComponent<RectTransform>();
             handleRect.sizeDelta = new Vector2(20, 30);
 
-            volumeSlider = sliderObj.AddComponent<Slider>();
-            volumeSlider.fillRect = fillRect;
-            volumeSlider.handleRect = handleRect;
-            volumeSlider.targetGraphic = handleImg;
-            volumeSlider.minValue = 0f;
-            volumeSlider.maxValue = 1f;
-            volumeSlider.value = PlayerPrefs.GetFloat("MasterVolume", 1f);
-            volumeSlider.onValueChanged.AddListener(OnVolumeChanged);
-
-            // Controls hint
-            CreateText(settingsPanel.transform, "ControlsTitle", "CONTROLS",
-                new Vector2(0, -20), 22, new Color(0.8f, 0.8f, 0.8f));
-
-            CreateText(settingsPanel.transform, "ControlsPC", "PC: A/D or ←/→ to switch lanes\nNumpad: Adjust mirrors\nEsc: Pause",
-                new Vector2(0, -70), 18, new Color(0.6f, 0.6f, 0.6f));
-
-            CreateText(settingsPanel.transform, "ControlsMobile", "Mobile: Swipe left/right to switch lanes",
-                new Vector2(0, -120), 18, new Color(0.6f, 0.6f, 0.6f));
-
-            // Back button
-            CreateButton(settingsPanel.transform, "BackButton", "← BACK", new Vector2(0, -170), OnSettingsBack,
-                new Color(0.3f, 0.3f, 0.4f), Color.white, 24);
-
-            settingsPanel.SetActive(false);
+            Slider slider = sliderObj.AddComponent<Slider>();
+            slider.fillRect = fillRect;
+            slider.handleRect = handleRect;
+            slider.targetGraphic = handleImg;
+            slider.minValue = 0f;
+            slider.maxValue = 1f;
+            slider.value = Mathf.Clamp01(initialValue);
+            slider.onValueChanged.AddListener(onChanged);
+            return slider;
         }
 
         private void OnPlay()
         {
+            // Persist any uncommitted slider changes before scene swap.
+            PlayerPrefs.Save();
             SceneManager.LoadScene("SampleScene");
         }
 
@@ -170,17 +215,47 @@ namespace ReverseRabbitRunner.UI
 
         private void OnSettingsBack()
         {
+            // User explicitly committed settings — flush.
+            PlayerPrefs.Save();
             settingsPanel.SetActive(false);
         }
 
-        private void OnVolumeChanged(float value)
+        private void OnMasterVolumeChanged(float value)
         {
             AudioListener.volume = value;
             PlayerPrefs.SetFloat("MasterVolume", value);
         }
 
+        private void OnSFXVolumeChanged(float value)
+        {
+            PlayerPrefs.SetFloat("SFXVolume", value);
+        }
+
+        private void OnMusicVolumeChanged(float value)
+        {
+            PlayerPrefs.SetFloat("MusicVolume", value);
+        }
+
+        private void OnToggleDeathFx()
+        {
+            Core.DeathSequence.UseBloodParticles = !Core.DeathSequence.UseBloodParticles;
+            if (deathFxButtonLabel != null)
+                deathFxButtonLabel.text = BuildDeathFxLabel();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus) PlayerPrefs.Save();
+        }
+
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause) PlayerPrefs.Save();
+        }
+
         private void OnQuit()
         {
+            PlayerPrefs.Save();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
