@@ -791,9 +791,40 @@ namespace ReverseRabbitRunner.World
 
         private Material MakeMat(Color color)
         {
+            // Cache materials by color so chunks SHARE one Material instance per color.
+            // Without this, every chunk leaks ~12 Materials when despawned because
+            // Renderer.material clones aren't freed when the GameObject is Destroyed.
+            int key = ColorKey(color);
+            if (materialCache.TryGetValue(key, out Material cached) && cached != null)
+                return cached;
+
             Material mat = new Material(urpLit);
             mat.color = color;
+            materialCache[key] = mat;
             return mat;
+        }
+
+        private static int ColorKey(Color c)
+        {
+            // Quantize to 8-bit channels — colors that look identical share a Material
+            int r = Mathf.Clamp((int)(c.r * 255f), 0, 255);
+            int g = Mathf.Clamp((int)(c.g * 255f), 0, 255);
+            int b = Mathf.Clamp((int)(c.b * 255f), 0, 255);
+            int a = Mathf.Clamp((int)(c.a * 255f), 0, 255);
+            return (r << 24) | (g << 16) | (b << 8) | a;
+        }
+
+        private readonly Dictionary<int, Material> materialCache = new();
+
+        private void OnDestroy()
+        {
+            // Release all cached materials when this manager is destroyed
+            // (e.g. on scene unload / quit-to-menu).
+            foreach (var kvp in materialCache)
+            {
+                if (kvp.Value != null) Destroy(kvp.Value);
+            }
+            materialCache.Clear();
         }
     }
 }
