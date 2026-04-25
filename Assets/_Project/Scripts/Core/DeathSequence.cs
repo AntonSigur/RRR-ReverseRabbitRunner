@@ -32,11 +32,16 @@ namespace ReverseRabbitRunner.Core
         [SerializeField] private float particleSpread = 3f;
         [SerializeField] private float particleLifetime = 2.5f;
 
-        // Blood mode (true) vs Carrot mode (false)
+        // Blood mode (true) vs Carrot mode (false). Toggled rarely (button click),
+        // so we save immediately to keep the choice durable across crashes.
         public static bool UseBloodParticles
         {
             get => PlayerPrefs.GetInt("DeathParticleMode", 1) == 1;
-            set => PlayerPrefs.SetInt("DeathParticleMode", value ? 1 : 0);
+            set
+            {
+                PlayerPrefs.SetInt("DeathParticleMode", value ? 1 : 0);
+                PlayerPrefs.Save();
+            }
         }
 
         private Transform farmerTransform;

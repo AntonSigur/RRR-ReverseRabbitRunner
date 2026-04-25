@@ -583,6 +583,16 @@ namespace ReverseRabbitRunner.UI
                     if (Core.MusicPlayer.Instance != null)
                         Core.MusicPlayer.Instance.Volume = musicVol;
 
+                    // Persist all volume changes once the user releases the slider /
+                    // lifts a finger. Cheaper than calling PlayerPrefs.Save() every
+                    // frame while dragging; lifecycle hooks still cover quit/pause.
+                    if (Event.current != null && Event.current.type == EventType.MouseUp)
+                    {
+                        Core.AudioManager.Instance?.FlushVolumePrefs();
+                        Core.MusicPlayer.Instance?.FlushVolumePrefs();
+                        PlayerPrefs.Save();
+                    }
+
                     // Death particle mode toggle
                     infoStyle.fontSize = 22;
                     GUI.Label(new Rect(0, Screen.height * 0.78f, Screen.width, 30), "Death Effect", infoStyle);

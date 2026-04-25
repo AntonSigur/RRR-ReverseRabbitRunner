@@ -264,16 +264,44 @@ namespace ReverseRabbitRunner.Core
             get => musicVolume;
             set
             {
-                musicVolume = Mathf.Clamp01(value);
+                float v = Mathf.Clamp01(value);
+                if (Mathf.Approximately(musicVolume, v)) return;
+                musicVolume = v;
                 if (activeSource != null && !isCrossfading)
                     activeSource.volume = musicVolume;
                 PlayerPrefs.SetFloat("MusicVolume", musicVolume);
+                volumePrefsDirty = true;
             }
+        }
+
+        private bool volumePrefsDirty;
+
+        public void FlushVolumePrefs()
+        {
+            if (!volumePrefsDirty) return;
+            PlayerPrefs.Save();
+            volumePrefsDirty = false;
+        }
+
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause) FlushVolumePrefs();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus) FlushVolumePrefs();
+        }
+
+        private void OnApplicationQuit()
+        {
+            FlushVolumePrefs();
         }
 
         private void LoadVolumePrefs()
         {
             musicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.35f);
+            volumePrefsDirty = false;
         }
     }
 }
