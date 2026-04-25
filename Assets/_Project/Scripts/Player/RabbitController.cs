@@ -102,6 +102,7 @@ namespace ReverseRabbitRunner.Player
             if (body != null) bodyTransform = body;
 
             BuildNearMissZone();
+            BuildInputActions();
         }
 
         private void BuildNearMissZone()
@@ -134,9 +135,10 @@ namespace ReverseRabbitRunner.Player
             detector.OnNearMiss += go => OnNearMiss?.Invoke(go);
         }
 
-        private void OnEnable()
+        private void BuildInputActions()
         {
-            // Lane switching input
+            // Lane switching input — built once at Awake, enabled/disabled
+            // by OnEnable/OnDisable to avoid per-cycle allocation churn.
             moveAction = new InputAction("Move", InputActionType.Value);
             moveAction.AddCompositeBinding("1DAxis")
                 .With("Negative", "<Keyboard>/a")
@@ -150,22 +152,29 @@ namespace ReverseRabbitRunner.Player
             moveAction.AddCompositeBinding("1DAxis")
                 .With("Negative", "<Gamepad>/dpad/left")
                 .With("Positive", "<Gamepad>/dpad/right");
-            moveAction.Enable();
 
-            // Jump input
             jumpAction = new InputAction("Jump", InputActionType.Button);
             jumpAction.AddBinding("<Keyboard>/space");
             jumpAction.AddBinding("<Keyboard>/w");
             jumpAction.AddBinding("<Keyboard>/upArrow");
             jumpAction.AddBinding("<Gamepad>/buttonSouth");
-            jumpAction.Enable();
+        }
+
+        private void OnEnable()
+        {
+            moveAction?.Enable();
+            jumpAction?.Enable();
         }
 
         private void OnDisable()
         {
             moveAction?.Disable();
-            moveAction?.Dispose();
             jumpAction?.Disable();
+        }
+
+        private void OnDestroy()
+        {
+            moveAction?.Dispose();
             jumpAction?.Dispose();
         }
 

@@ -20,6 +20,8 @@ namespace ReverseRabbitRunner.PowerUps
         private Quaternion preFlightRotation;
         private FlightPhase phase;
         private GameObject carrotStreamParent;
+        private Material sharedCarrotMat;
+        private Material sharedLeavesMat;
 
         private enum FlightPhase { TransitionUp, Flying, TransitionDown }
 
@@ -153,8 +155,8 @@ namespace ReverseRabbitRunner.PowerUps
             int laneCount = 5;
 
             var urpLit = Shader.Find("Universal Render Pipeline/Lit");
-            Material carrotMat = MakeMat(new Color(1f, 0.5f, 0.05f), urpLit);
-            Material leavesMat = MakeMat(new Color(0.1f, 0.6f, 0.1f), urpLit);
+            sharedCarrotMat = MakeMat(new Color(1f, 0.5f, 0.05f), urpLit);
+            sharedLeavesMat = MakeMat(new Color(0.1f, 0.6f, 0.1f), urpLit);
 
             for (int i = 0; i < carrotCount; i++)
             {
@@ -178,7 +180,7 @@ namespace ReverseRabbitRunner.PowerUps
                 carrot.transform.position = new Vector3(x, flightHeight + 0.44f, z);
                 carrot.transform.localScale = new Vector3(0.34f, 0.68f, 0.34f);
                 carrot.transform.rotation = Quaternion.Euler(0, 0, 180f);
-                carrot.GetComponent<Renderer>().material = carrotMat;
+                carrot.GetComponent<Renderer>().sharedMaterial = sharedCarrotMat;
                 carrot.GetComponent<Collider>().isTrigger = true;
 
                 var leaves = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -187,7 +189,7 @@ namespace ReverseRabbitRunner.PowerUps
                 leaves.transform.localPosition = new Vector3(0, -0.7f, 0);
                 leaves.transform.localScale = new Vector3(2f, 0.3f, 2f);
                 Object.DestroyImmediate(leaves.GetComponent<Collider>());
-                leaves.GetComponent<Renderer>().material = leavesMat;
+                leaves.GetComponent<Renderer>().sharedMaterial = sharedLeavesMat;
             }
 
             Debug.Log($"[Flight] Spawned {carrotCount} sky carrots across {numChanges + 1} lane segments");
@@ -207,6 +209,9 @@ namespace ReverseRabbitRunner.PowerUps
 
             if (carrotStreamParent != null)
                 Destroy(carrotStreamParent);
+
+            if (sharedCarrotMat != null) { Destroy(sharedCarrotMat); sharedCarrotMat = null; }
+            if (sharedLeavesMat != null) { Destroy(sharedLeavesMat); sharedLeavesMat = null; }
 
             Debug.Log("[Flight] Flight complete — back to backwards running!");
             Destroy(this);
