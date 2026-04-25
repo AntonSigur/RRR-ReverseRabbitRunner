@@ -78,6 +78,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 👨‍🌾 Angry farmer with hat, pitchfork, scowling face, and AI pursuit
 - 🧠 Farmer obstacle avoidance AI — scans ahead, switches lanes, stumbles on hits, disappears when far behind, reappears after delay
 - 🥕 Carrot collecting with score tracking and bobbing animation
+- 🔥 **Combo / streak multiplier** — collect carrots in quick succession to build a streak (x2 → x5). Stumble or stop collecting and the streak resets. Pitch-rising audio + on-screen tier-up celebration.
 - 🛤️ 5-lane switching (A/D or arrow keys)
 - 🦘 Jump mechanic (Space) — clear obstacles and collect mid-air carrots
 - 🌍 Chunk-based infinite world with 3 themed biomes (Concrete, Snow+Mud, Grass)

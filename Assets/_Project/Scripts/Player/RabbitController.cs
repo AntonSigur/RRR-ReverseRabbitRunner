@@ -371,6 +371,8 @@ namespace ReverseRabbitRunner.Player
 
             OnStumble?.Invoke(penalty);
             OnHitObstacle?.Invoke();
+            // Stumble breaks the carrot streak
+            Core.ScoreManager.Instance?.BreakCombo();
         }
 
         private void UpdateTargetPosition()
