@@ -118,8 +118,12 @@ namespace ReverseRabbitRunner.UI
             Player.CameraFollow.Instance?.Shake(0.08f, 0.15f);
             nearMissFlashTimer = 0.7f;
             // Reward the dodge — half a carrot's worth, and it counts as a streak hit
-            // so dodging masterfully also builds your combo.
-            Core.ScoreManager.Instance?.AddScore(1);
+            // so dodging masterfully also builds your combo. Anchored at the obstacle
+            // so the score-floater pops where the player actually dodged.
+            if (obstacle != null)
+                Core.ScoreManager.Instance?.AddScoreAt(1, obstacle.transform.position);
+            else
+                Core.ScoreManager.Instance?.AddScore(1);
         }
 
         private Core.DeathSequence GetDeathSeq()

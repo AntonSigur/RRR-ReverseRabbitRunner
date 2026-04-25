@@ -87,7 +87,10 @@ namespace ReverseRabbitRunner.Player
         public void NotifyCarrotCollected(GameObject carrot)
         {
             OnCollectCarrot?.Invoke(carrot);
-            Core.ScoreManager.Instance?.AddScore(1);
+            if (carrot != null)
+                Core.ScoreManager.Instance?.AddScoreAt(1, carrot.transform.position);
+            else
+                Core.ScoreManager.Instance?.AddScore(1);
         }
 
         private void Awake()
