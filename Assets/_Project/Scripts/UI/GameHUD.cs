@@ -617,23 +617,25 @@ namespace ReverseRabbitRunner.UI
                 {
                     // Settings sub-panel
                     gameOverStyle.normal.textColor = Color.white;
-                    GUI.Label(new Rect(0, Screen.height * 0.2f, Screen.width, 60), "SETTINGS", gameOverStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.16f, Screen.width, 60), "SETTINGS", gameOverStyle);
                     gameOverStyle.normal.textColor = Color.red;
 
                     float cx = Screen.width / 2f;
 
                     infoStyle.alignment = TextAnchor.MiddleCenter;
                     infoStyle.fontSize = 22;
-                    GUI.Label(new Rect(0, Screen.height * 0.35f, Screen.width, 30), "CONTROLS", infoStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.28f, Screen.width, 30), "CONTROLS", infoStyle);
+                    infoStyle.fontSize = 16;
+                    GUI.Label(new Rect(0, Screen.height * 0.32f, Screen.width, 28),
+                        "PC: A/D or ←/→ switch lanes · Space/W/↑ jump · Esc/Q pause", infoStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.36f, Screen.width, 28),
+                        "Mobile: swipe lanes · swipe up or tap to jump", infoStyle);
                     infoStyle.fontSize = 18;
-                    GUI.Label(new Rect(0, Screen.height * 0.40f, Screen.width, 60),
-                        "PC: A/D or ←/→ = switch lanes | Space/W/↑ = jump | Numpad = mirrors | Esc/Q = pause", infoStyle);
-                    GUI.Label(new Rect(0, Screen.height * 0.46f, Screen.width, 30),
-                        "Mobile: Swipe lanes • Swipe up or tap to jump", infoStyle);
 
-                    GUI.Label(new Rect(0, Screen.height * 0.55f, Screen.width, 30), "Master Volume", infoStyle);
+                    // Volumes ---------------------------------------------------
+                    GUI.Label(new Rect(0, Screen.height * 0.42f, Screen.width, 26), "Master Volume", infoStyle);
                     float vol = GUI.HorizontalSlider(
-                        new Rect(cx - 150, Screen.height * 0.60f, 300, 20),
+                        new Rect(cx - 150, Screen.height * 0.46f, 300, 20),
                         AudioListener.volume, 0f, 1f);
                     if (Core.AudioManager.Instance != null)
                         Core.AudioManager.Instance.MasterVolume = vol;
@@ -643,44 +645,63 @@ namespace ReverseRabbitRunner.UI
                         PlayerPrefs.SetFloat("MasterVolume", vol);
                     }
 
-                    // SFX Volume
-                    GUI.Label(new Rect(0, Screen.height * 0.63f, Screen.width, 30), "SFX Volume", infoStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.50f, Screen.width, 26), "SFX Volume", infoStyle);
                     float sfxVol = Core.AudioManager.Instance != null ? Core.AudioManager.Instance.SFXVolume : 1f;
                     sfxVol = GUI.HorizontalSlider(
-                        new Rect(cx - 150, Screen.height * 0.67f, 300, 20),
+                        new Rect(cx - 150, Screen.height * 0.54f, 300, 20),
                         sfxVol, 0f, 1f);
                     if (Core.AudioManager.Instance != null)
                         Core.AudioManager.Instance.SFXVolume = sfxVol;
 
-                    // Music Volume
-                    GUI.Label(new Rect(0, Screen.height * 0.70f, Screen.width, 30), "Music Volume", infoStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.58f, Screen.width, 26), "Music Volume", infoStyle);
                     float musicVol = Core.MusicPlayer.Instance != null ? Core.MusicPlayer.Instance.Volume : 0.35f;
                     musicVol = GUI.HorizontalSlider(
-                        new Rect(cx - 150, Screen.height * 0.74f, 300, 20),
+                        new Rect(cx - 150, Screen.height * 0.62f, 300, 20),
                         musicVol, 0f, 1f);
                     if (Core.MusicPlayer.Instance != null)
                         Core.MusicPlayer.Instance.Volume = musicVol;
 
-                    // Persist all volume changes once the user releases the slider /
-                    // lifts a finger. Cheaper than calling PlayerPrefs.Save() every
-                    // frame while dragging; lifecycle hooks still cover quit/pause.
+                    // Accessibility --------------------------------------------
+                    infoStyle.fontSize = 22;
+                    GUI.Label(new Rect(0, Screen.height * 0.67f, Screen.width, 26), "Accessibility", infoStyle);
+                    infoStyle.fontSize = 16;
+                    float shakePct = Core.AccessibilitySettings.RawShakeScale;
+                    GUI.Label(new Rect(0, Screen.height * 0.71f, Screen.width, 24),
+                        $"Screen Shake  {Mathf.RoundToInt(shakePct * 100f)}%", infoStyle);
+                    float newShake = GUI.HorizontalSlider(
+                        new Rect(cx - 150, Screen.height * 0.745f, 300, 20),
+                        shakePct, 0f, 1.5f);
+                    if (!Mathf.Approximately(newShake, shakePct))
+                        Core.AccessibilitySettings.ShakeScale = newShake;
+
+                    bool reduce = Core.AccessibilitySettings.ReduceMotion;
+                    string reduceLabel = reduce ? "☑  Reduce Motion (shake off)"
+                                                : "☐  Reduce Motion";
+                    if (GUI.Button(new Rect(cx - 175, Screen.height * 0.78f, 350, 30), reduceLabel, infoStyle))
+                    {
+                        Core.AudioManager.Instance?.PlayMenuClick();
+                        Core.AccessibilitySettings.ReduceMotion = !reduce;
+                    }
+                    infoStyle.fontSize = 18;
+
+                    // Death Effect toggle --------------------------------------
+                    bool useBlood = Core.DeathSequence.UseBloodParticles;
+                    string modeLabel = useBlood ? "🩸 Blood particles (click)"
+                                                : "🥕 Carrot particles (click)";
+                    if (GUI.Button(new Rect(cx - 175, Screen.height * 0.825f, 350, 30), modeLabel, infoStyle))
+                    {
+                        Core.AudioManager.Instance?.PlayMenuClick();
+                        Core.DeathSequence.UseBloodParticles = !useBlood;
+                    }
+
+                    // Persist all slider/toggle changes on mouse-up — cheaper
+                    // than saving every frame while dragging.
                     if (Event.current != null && Event.current.type == EventType.MouseUp)
                     {
                         Core.AudioManager.Instance?.FlushVolumePrefs();
                         Core.MusicPlayer.Instance?.FlushVolumePrefs();
+                        Core.AccessibilitySettings.Flush();
                         PlayerPrefs.Save();
-                    }
-
-                    // Death particle mode toggle
-                    infoStyle.fontSize = 22;
-                    GUI.Label(new Rect(0, Screen.height * 0.78f, Screen.width, 30), "Death Effect", infoStyle);
-                    infoStyle.fontSize = 18;
-                    bool useBlood = Core.DeathSequence.UseBloodParticles;
-                    string modeLabel = useBlood ? "🩸 Blood (click to change)" : "🥕 Carrots (click to change)";
-                    if (GUI.Button(new Rect(cx - 150, Screen.height * 0.825f, 300, 35), modeLabel, buttonStyle))
-                    {
-                        Core.AudioManager.Instance?.PlayMenuClick();
-                        Core.DeathSequence.UseBloodParticles = !useBlood;
                     }
 
                     if (buttonStyle == null)
@@ -692,6 +713,7 @@ namespace ReverseRabbitRunner.UI
                     if (GUI.Button(new Rect(cx - btnW / 2, Screen.height * 0.90f, btnW, btnH), "← BACK", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
+                        Core.AccessibilitySettings.Flush();
                         showSettings = false;
                     }
                     infoStyle.alignment = TextAnchor.UpperLeft;
