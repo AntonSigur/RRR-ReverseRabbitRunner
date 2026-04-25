@@ -79,6 +79,17 @@ namespace ReverseRabbitRunner.Player
         /// <summary>Fires when the rabbit dodges or jump-clears an obstacle without stumbling.</summary>
         public event System.Action<GameObject> OnNearMiss;
 
+        /// <summary>
+        /// Single-source-of-truth pickup hook. Used by both direct trigger collection
+        /// and the Magnet-Carrot auto-collect so events / score / combo all flow
+        /// through the same code path.
+        /// </summary>
+        public void NotifyCarrotCollected(GameObject carrot)
+        {
+            OnCollectCarrot?.Invoke(carrot);
+            Core.ScoreManager.Instance?.AddScore(1);
+        }
+
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
@@ -422,8 +433,7 @@ namespace ReverseRabbitRunner.Player
 
             if (other.CompareTag("Carrot"))
             {
-                OnCollectCarrot?.Invoke(other.gameObject);
-                Core.ScoreManager.Instance?.AddScore(1);
+                NotifyCarrotCollected(other.gameObject);
                 Destroy(other.gameObject);
             }
             else if (other.CompareTag("Obstacle"))

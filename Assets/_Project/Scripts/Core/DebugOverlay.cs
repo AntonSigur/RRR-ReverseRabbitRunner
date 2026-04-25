@@ -140,6 +140,12 @@ namespace ReverseRabbitRunner.Core
                 DrawLine(ref cy, x, w, lineH, style,
                     $"<color=#ff88ff>🍼 {babyCount} babies active</color>");
 
+            // Magnet
+            var magnet = PowerUps.MagnetEffect.Active;
+            if (magnet != null)
+                DrawLine(ref cy, x, w, lineH, style,
+                    $"<color=#ffd84a>✨ MAGNET {magnet.Remaining:0.0}s</color>");
+
             // World stats
             var chunk = FindAnyObjectByType<World.ChunkManager>();
             if (chunk != null)

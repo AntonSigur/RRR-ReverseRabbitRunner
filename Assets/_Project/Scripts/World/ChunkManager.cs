@@ -43,6 +43,7 @@ namespace ReverseRabbitRunner.World
         [SerializeField] private int powerUpStartChunk = 6;
         [SerializeField] private float birthCarrotChance = 0.25f;
         [SerializeField] private float wingCarrotChance = 0.15f;
+        [SerializeField] private float magnetCarrotChance = 0.18f;
 
         // Public stats for HUD
         public float TotalDistance { get; private set; }
@@ -628,22 +629,31 @@ namespace ReverseRabbitRunner.World
         private Material powerUpLeavesMat;
         private Material powerUpWingMat;
         private Material powerUpWingLeavesMat;
+        private Material powerUpMagnetMat;
+        private Material powerUpMagnetLeavesMat;
 
         private void SpawnPowerUpsInChunk(Transform parent, float chunkStartZ, int chunkIndex)
         {
             if (chunkIndex < powerUpStartChunk) return;
 
-            // Don't spawn Birth-Carrot if babies are active; don't spawn Wing-Carrot if flying
+            // Don't spawn Birth-Carrot if babies are active; don't spawn Wing-Carrot if flying;
+            // don't spawn Magnet-Carrot if one is already active on the rabbit.
             bool babiesActive = PowerUps.BabyRabbit.ActiveBabies.Count > 0;
             var rabbit = GameObject.FindGameObjectWithTag("Player");
             bool isFlying = rabbit != null && rabbit.GetComponent<Player.RabbitController>()?.IsFlying == true;
+            bool magnetActive = PowerUps.MagnetEffect.Active != null;
 
             // Roll for which power-up to spawn (mutually exclusive per chunk)
             float roll = Random.value;
-            bool spawnBirth = !babiesActive && roll < birthCarrotChance;
-            bool spawnWing = !isFlying && !spawnBirth && roll < birthCarrotChance + wingCarrotChance;
+            float birthCutoff = babiesActive ? 0f : birthCarrotChance;
+            float wingCutoff = birthCutoff + (isFlying ? 0f : wingCarrotChance);
+            float magnetCutoff = wingCutoff + (magnetActive ? 0f : magnetCarrotChance);
 
-            if (!spawnBirth && !spawnWing) return;
+            bool spawnBirth = roll < birthCutoff;
+            bool spawnWing = !spawnBirth && roll < wingCutoff;
+            bool spawnMagnet = !spawnBirth && !spawnWing && roll < magnetCutoff;
+
+            if (!spawnBirth && !spawnWing && !spawnMagnet) return;
 
             int lane = Random.Range(0, maxLanes);
             float xPos = (lane - maxLanes / 2) * laneWidth;
@@ -668,6 +678,16 @@ namespace ReverseRabbitRunner.World
                 }
                 SpawnPowerUpCarrot(parent, xPos, zPos, "WingCarrot",
                     powerUpWingMat, powerUpWingLeavesMat, typeof(PowerUps.WingCarrot));
+            }
+            else // spawnMagnet
+            {
+                if (powerUpMagnetMat == null)
+                {
+                    powerUpMagnetMat = MakeMat(new Color(1f, 0.85f, 0.15f));      // bright gold body
+                    powerUpMagnetLeavesMat = MakeMat(new Color(0.95f, 0.7f, 0.1f)); // amber leaves
+                }
+                SpawnPowerUpCarrot(parent, xPos, zPos, "MagnetCarrot",
+                    powerUpMagnetMat, powerUpMagnetLeavesMat, typeof(PowerUps.MagnetCarrot));
             }
         }
 
