@@ -168,6 +168,9 @@ namespace ReverseRabbitRunner.Core
             Debug.Log($"[MusicPlayer] Now playing: {clip.name} ({clip.length:F1}s)");
         }
 
+        /// <summary>True once the Resources/Music playlist has at least one clip loaded.</summary>
+        public bool HasPlaylist => playlist != null && playlist.Count > 0;
+
         /// <summary>
         /// Skip to next track with crossfade.
         /// </summary>
