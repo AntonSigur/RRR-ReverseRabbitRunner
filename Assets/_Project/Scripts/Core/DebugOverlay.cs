@@ -146,6 +146,13 @@ namespace ReverseRabbitRunner.Core
                 DrawLine(ref cy, x, w, lineH, style,
                     $"<color=#ffd84a>✨ MAGNET {magnet.Remaining:0.0}s</color>");
 
+            // Difficulty
+            var diff = Core.DifficultyManager.Instance;
+            if (diff != null)
+                DrawLine(ref cy, x, w, lineH, style,
+                    $"<color=#7ac8ff>📈 TIER {diff.Tier + 1}/{diff.MaxTier + 1} dist:{diff.CurrentDistance:0}m " +
+                    $"target:{diff.SpeedTarget:F1} farmerX:{diff.FarmerClosenessMultiplier:F2}</color>");
+
             // World stats
             var chunk = FindAnyObjectByType<World.ChunkManager>();
             if (chunk != null)

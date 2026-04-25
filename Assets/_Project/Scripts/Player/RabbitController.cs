@@ -205,8 +205,19 @@ namespace ReverseRabbitRunner.Player
 
             HandleInput();
 
-            // Gradually increase base speed
-            baseSpeed = Mathf.Min(baseSpeed + speedIncreaseRate * Time.deltaTime, maxSpeed);
+            // Speed escalation: if a DifficultyManager is present it drives the target
+            // (tier-based step-up curve). Otherwise fall back to the legacy linear drift
+            // so the rabbit still works in test scenes without one.
+            var diff = Core.DifficultyManager.Instance;
+            if (diff != null)
+            {
+                float target = Mathf.Min(diff.SpeedTarget, maxSpeed);
+                baseSpeed = Mathf.MoveTowards(baseSpeed, target, diff.SpeedRampPerSecond * Time.deltaTime);
+            }
+            else
+            {
+                baseSpeed = Mathf.Min(baseSpeed + speedIncreaseRate * Time.deltaTime, maxSpeed);
+            }
 
             // Recover from speed debt (jump or stumble)
             if (speedDebt > 0f)

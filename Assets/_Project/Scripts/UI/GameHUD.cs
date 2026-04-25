@@ -22,6 +22,7 @@ namespace ReverseRabbitRunner.UI
         private GUIStyle comboBigStyle;
         private float multiplierFlashTimer;  // tier-up celebration flash
         private float nearMissFlashTimer;    // "NICE!" pop on dodge
+        private float tierUpFlashTimer;      // "TIER X" celebration on difficulty step-up
 
         private GUIStyle scoreStyle;
         private GUIStyle warningStyle;
@@ -62,6 +63,9 @@ namespace ReverseRabbitRunner.UI
                 rabbit.OnStumble += OnRabbitStumble;
                 rabbit.OnNearMiss += OnRabbitNearMiss;
             }
+
+            if (Core.DifficultyManager.Instance != null)
+                Core.DifficultyManager.Instance.OnTierUp += OnDifficultyTierUp;
         }
 
         private void OnDestroy()
@@ -73,6 +77,14 @@ namespace ReverseRabbitRunner.UI
                 rabbit.OnStumble -= OnRabbitStumble;
                 rabbit.OnNearMiss -= OnRabbitNearMiss;
             }
+            if (Core.DifficultyManager.Instance != null)
+                Core.DifficultyManager.Instance.OnTierUp -= OnDifficultyTierUp;
+        }
+
+        private void OnDifficultyTierUp(int newTier)
+        {
+            tierUpFlashTimer = 1.6f;
+            Player.CameraFollow.Instance?.Shake(0.18f, 0.25f);
         }
 
         private void OnComboChanged(int comboCount, int multiplier, bool tierIncreased)
@@ -220,6 +232,53 @@ namespace ReverseRabbitRunner.UI
             GUI.color = Color.white;
         }
 
+        private void DrawTierHUD(float padding)
+        {
+            var diff = Core.DifficultyManager.Instance;
+            if (diff == null) return;
+
+            // Compact "TIER N" badge bottom-left, with a thin progress bar to the next tier.
+            float w = 170f;
+            float h = 36f;
+            float x = padding;
+            float y = Screen.height - h - padding;
+
+            GUI.color = new Color(0f, 0f, 0f, 0.55f);
+            GUI.DrawTexture(new Rect(x - 4, y - 4, w + 8, h + 8), Texture2D.whiteTexture);
+
+            var label = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 18,
+                alignment = TextAnchor.MiddleLeft,
+                fontStyle = FontStyle.Bold
+            };
+            label.normal.textColor = new Color(0.9f, 0.95f, 1f);
+            GUI.color = Color.white;
+            GUI.Label(new Rect(x + 8, y, w - 16, 22), $"TIER {diff.Tier + 1}  \u2022  {diff.CurrentDistance:0}m", label);
+
+            // Tier progress bar
+            float barY = y + 24f;
+            GUI.color = new Color(0.15f, 0.18f, 0.25f, 0.9f);
+            GUI.DrawTexture(new Rect(x + 8, barY, w - 16, 6), Texture2D.whiteTexture);
+            GUI.color = new Color(0.4f, 0.7f, 1f, 0.95f);
+            GUI.DrawTexture(new Rect(x + 8, barY, (w - 16) * diff.TierProgress, 6), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+
+            // Tier-up celebration burst (centre-top)
+            if (tierUpFlashTimer > 0f)
+            {
+                float t = Mathf.Clamp01(tierUpFlashTimer / 1.6f);
+                float alpha = t;
+                int oldFont = comboBigStyle.fontSize;
+                comboBigStyle.fontSize = Mathf.RoundToInt(56f + (1f - t) * 24f);
+                comboBigStyle.normal.textColor = new Color(0.4f, 0.85f, 1f, alpha);
+                GUI.Label(new Rect(0, Screen.height * 0.32f, Screen.width, 100),
+                    $"TIER UP  \u2192  {diff.Tier + 1}", comboBigStyle);
+                comboBigStyle.fontSize = oldFont;
+                comboBigStyle.normal.textColor = Color.white;
+            }
+        }
+
         private void InitStyles()
         {
             scoreStyle = new GUIStyle(GUI.skin.label)
@@ -315,6 +374,8 @@ namespace ReverseRabbitRunner.UI
                 multiplierFlashTimer -= Time.unscaledDeltaTime;
             if (nearMissFlashTimer > 0f)
                 nearMissFlashTimer -= Time.unscaledDeltaTime;
+            if (tierUpFlashTimer > 0f)
+                tierUpFlashTimer -= Time.unscaledDeltaTime;
         }
 
         private void OnGUI()
@@ -340,6 +401,7 @@ namespace ReverseRabbitRunner.UI
             DrawComboHUD(score, padding);
             DrawNearMissPop();
             DrawMagnetHUD(padding);
+            DrawTierHUD(padding);
             // Speed (below score)
             if (rabbit != null)
             {
