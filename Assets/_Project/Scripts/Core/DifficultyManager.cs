@@ -106,6 +106,10 @@ namespace ReverseRabbitRunner.Core
                 if (cachedDistance >= tierThresholds[i]) { t = i; break; }
             }
 
+            // First-run soft start: hold tier 0 while the tutorial is showing
+            // its prompts so the player isn't blindsided by escalation.
+            if (Tutorial.HoldDifficulty) t = 0;
+
             if (t != cachedTier)
             {
                 int prev = cachedTier;

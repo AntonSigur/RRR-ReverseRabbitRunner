@@ -499,6 +499,32 @@ namespace ReverseRabbitRunner.UI
                 infoStyle.normal.textColor = prevColor;
             }
 
+            // Tutorial prompt — top-centre, animated pulse so it stands out.
+            if (Core.Tutorial.IsActive && Core.Tutorial.Current != Core.Tutorial.Step.Done)
+            {
+                string prompt = Core.Tutorial.CurrentPrompt;
+                if (!string.IsNullOrEmpty(prompt))
+                {
+                    var prevAlign2 = infoStyle.alignment;
+                    var prevColor2 = infoStyle.normal.textColor;
+                    var prevSize = infoStyle.fontSize;
+                    float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 4f);
+                    infoStyle.alignment = TextAnchor.UpperCenter;
+                    infoStyle.fontSize = 22;
+                    infoStyle.normal.textColor = new Color(1f, 1f, 0.7f, pulse);
+
+                    float bgY = 32f, bgH = 36f;
+                    GUI.color = new Color(0f, 0f, 0f, 0.55f);
+                    GUI.DrawTexture(new Rect(Screen.width * 0.15f, bgY, Screen.width * 0.7f, bgH), Texture2D.whiteTexture);
+                    GUI.color = Color.white;
+
+                    GUI.Label(new Rect(0, bgY + 6f, Screen.width, bgH), prompt, infoStyle);
+                    infoStyle.alignment = prevAlign2;
+                    infoStyle.normal.textColor = prevColor2;
+                    infoStyle.fontSize = prevSize;
+                }
+            }
+
             // Chunk/Distance debug stats (bottom-left)
             var chunkMgr = GetChunkMgr();
             if (chunkMgr != null)
