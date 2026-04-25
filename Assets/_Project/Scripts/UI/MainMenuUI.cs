@@ -16,6 +16,7 @@ namespace ReverseRabbitRunner.UI
         private Slider sfxSlider;
         private Slider musicSlider;
         private Text deathFxButtonLabel;
+        private Text goldenIndicator;
 
         private void Start()
         {
@@ -28,6 +29,19 @@ namespace ReverseRabbitRunner.UI
             AudioListener.volume = PlayerPrefs.GetFloat("MasterVolume", 1f);
 
             BuildUI();
+
+            Core.EasterEggs.OnGoldenRabbitChanged += OnGoldenRabbitChanged;
+        }
+
+        private void OnDestroy()
+        {
+            Core.EasterEggs.OnGoldenRabbitChanged -= OnGoldenRabbitChanged;
+        }
+
+        private void OnGoldenRabbitChanged(bool unlocked)
+        {
+            if (goldenIndicator != null)
+                goldenIndicator.gameObject.SetActive(unlocked);
         }
 
         private void BuildUI()
@@ -55,6 +69,14 @@ namespace ReverseRabbitRunner.UI
             // Subtitle
             CreateText(canvasObj.transform, "Subtitle", "Run backwards. Trust your mirrors.",
                 new Vector2(0, 120), 24, new Color(0.7f, 0.7f, 0.7f));
+
+            // Easter-egg indicator — created once and shown/hidden in response
+            // to the Konami toggle event. Stays in sync if user activates the
+            // cheat while sitting on the title screen.
+            goldenIndicator = CreateText(canvasObj.transform, "GoldenIndicator",
+                "★ GOLDEN RABBIT ENGAGED ★", new Vector2(0, 85), 18,
+                new Color(1f, 0.82f, 0.18f), FontStyle.Bold);
+            goldenIndicator.gameObject.SetActive(Core.EasterEggs.GoldenRabbitUnlocked);
 
             // Buttons
             CreateButton(canvasObj.transform, "PlayButton", "▶  PLAY", new Vector2(0, 0), OnPlay,

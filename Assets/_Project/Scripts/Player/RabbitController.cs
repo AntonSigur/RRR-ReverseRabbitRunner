@@ -103,6 +103,61 @@ namespace ReverseRabbitRunner.Player
 
             BuildNearMissZone();
             BuildInputActions();
+            ApplyEasterEggVisuals();
+        }
+
+        // Materials we created at runtime — destroyed in OnDestroy to avoid leaks.
+        private System.Collections.Generic.List<Material> easterEggMaterials;
+
+        /// <summary>
+        /// Tints the rabbit body / head / paws with a gold sheen when the
+        /// <see cref="Core.EasterEggs.GoldenRabbitUnlocked"/> cheat is active.
+        ///
+        /// Walks every Renderer under the Body container and finds the shared
+        /// <c>Rabbit_Mat</c> material (assigned in <see cref="Editor.SceneSetup"/>).
+        /// We swap that single material for a tinted instance so the head, body
+        /// and limbs all change colour together; eyes / nose / pupils keep their
+        /// original materials. The tint is multiplicative so URP lighting still
+        /// reads correctly.
+        /// </summary>
+        private void ApplyEasterEggVisuals()
+        {
+            if (!Core.EasterEggs.GoldenRabbitUnlocked) return;
+            if (bodyTransform == null) return;
+
+            var renderers = bodyTransform.GetComponentsInChildren<Renderer>(includeInactive: true);
+            if (renderers == null || renderers.Length == 0) return;
+
+            easterEggMaterials = new System.Collections.Generic.List<Material>();
+            Material tintedShared = null;
+
+            foreach (var r in renderers)
+            {
+                if (r == null) continue;
+                var mats = r.sharedMaterials;
+                if (mats == null) continue;
+
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var m = mats[i];
+                    if (m == null) continue;
+                    if (!m.name.StartsWith("Rabbit_Mat")) continue;
+
+                    if (tintedShared == null)
+                    {
+                        tintedShared = new Material(m) { name = "Rabbit_Mat_Golden" };
+                        if (tintedShared.HasProperty("_BaseColor"))
+                            tintedShared.SetColor("_BaseColor", Core.EasterEggs.GoldenRabbitTint);
+                        else
+                            tintedShared.color = Core.EasterEggs.GoldenRabbitTint;
+                        easterEggMaterials.Add(tintedShared);
+                    }
+                    mats[i] = tintedShared;
+                    changed = true;
+                }
+                if (changed) r.sharedMaterials = mats;
+            }
         }
 
         private void BuildNearMissZone()
@@ -176,6 +231,13 @@ namespace ReverseRabbitRunner.Player
         {
             moveAction?.Dispose();
             jumpAction?.Dispose();
+
+            if (easterEggMaterials != null)
+            {
+                for (int i = 0; i < easterEggMaterials.Count; i++)
+                    if (easterEggMaterials[i] != null) Destroy(easterEggMaterials[i]);
+                easterEggMaterials = null;
+            }
         }
 
         private void Update()
