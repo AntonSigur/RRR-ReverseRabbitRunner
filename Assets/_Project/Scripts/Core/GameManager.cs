@@ -77,6 +77,7 @@ namespace ReverseRabbitRunner.Core
 
         public void GameOver()
         {
+            ScoreManager.Instance?.CommitRunResults();
             Time.timeScale = 0f;
             SetState(GameState.GameOver);
         }

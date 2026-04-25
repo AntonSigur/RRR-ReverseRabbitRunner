@@ -23,7 +23,13 @@ namespace ReverseRabbitRunner.Core
 
         private int currentScore;
         private int highScore;
+        private int runStartHighScore;
         private int carrotsCollected;
+        private int maxComboReached;
+        private int maxMultiplierReached = 1;
+        private int maxTierReached;
+        private float bestDistance;
+        private float currentRunDistance;
 
         // Combo state
         private int comboCount;
@@ -31,12 +37,20 @@ namespace ReverseRabbitRunner.Core
         private float comboExpireTime;
 
         private const string HighScoreKey = "HighScore";
+        private const string BestDistanceKey = "BestDistance";
 
         public int CurrentScore => currentScore;
         public int HighScore => highScore;
         public int CarrotsCollected => carrotsCollected;
         public int ComboCount => comboCount;
         public int Multiplier => multiplier;
+        public int MaxComboReached => maxComboReached;
+        public int MaxMultiplierReached => maxMultiplierReached;
+        public int MaxTierReached => maxTierReached;
+        public float BestDistance => bestDistance;
+        public float CurrentRunDistance => currentRunDistance;
+        public bool LastRunWasNewBestScore { get; private set; }
+        public bool LastRunWasNewBestDistance { get; private set; }
         public float ComboTimeRemaining =>
             comboCount > 0 ? Mathf.Max(0f, comboExpireTime - Time.time) : 0f;
         public float ComboTimeWindow => comboTimeWindow;
@@ -61,6 +75,8 @@ namespace ReverseRabbitRunner.Core
             DontDestroyOnLoad(gameObject);
 
             highScore = PlayerPrefs.GetInt(HighScoreKey, 0);
+            bestDistance = PlayerPrefs.GetFloat(BestDistanceKey, 0f);
+            runStartHighScore = highScore;
         }
 
         private void Update()
@@ -68,6 +84,16 @@ namespace ReverseRabbitRunner.Core
             // Combo expiry — uses scaled Time.time so it pauses with the game
             if (comboCount > 0 && Time.time >= comboExpireTime)
                 BreakCombo();
+
+            // Track per-run distance + max tier
+            var diff = DifficultyManager.Instance;
+            if (diff != null)
+            {
+                if (diff.CurrentDistance > currentRunDistance)
+                    currentRunDistance = diff.CurrentDistance;
+                if (diff.Tier > maxTierReached)
+                    maxTierReached = diff.Tier;
+            }
         }
 
         public void AddScore(int basePoints)
@@ -77,6 +103,9 @@ namespace ReverseRabbitRunner.Core
             comboCount++;
             multiplier = ComputeMultiplier(comboCount);
             comboExpireTime = Time.time + comboTimeWindow;
+
+            if (comboCount > maxComboReached) maxComboReached = comboCount;
+            if (multiplier > maxMultiplierReached) maxMultiplierReached = multiplier;
 
             int gained = Mathf.Max(1, basePoints) * multiplier;
             currentScore += gained;
@@ -108,9 +137,44 @@ namespace ReverseRabbitRunner.Core
         {
             currentScore = 0;
             carrotsCollected = 0;
+            currentRunDistance = 0f;
+            maxComboReached = 0;
+            maxMultiplierReached = 1;
+            maxTierReached = 0;
+            runStartHighScore = highScore;
+            LastRunWasNewBestScore = false;
+            LastRunWasNewBestDistance = false;
             BreakCombo();
             OnScoreChanged?.Invoke(currentScore);
         }
+
+        /// <summary>
+        /// Called by GameManager when a run ends. Persists best distance and
+        /// snapshots whether either record was beaten this run, so the
+        /// game-over UI can show "NEW BEST!" badges.
+        /// </summary>
+        public void CommitRunResults()
+        {
+            // High score is already saved live in AddScore — but we set the flag
+            // here too so the game-over screen can light up the badge.
+            LastRunWasNewBestScore = currentScore > runStartHighScore;
+
+            float distNow = currentRunDistance;
+            if (distNow > bestDistance)
+            {
+                bestDistance = distNow;
+                PlayerPrefs.SetFloat(BestDistanceKey, bestDistance);
+                PlayerPrefs.Save();
+                LastRunWasNewBestDistance = true;
+            }
+            else
+            {
+                LastRunWasNewBestDistance = false;
+            }
+            OnRunCommitted?.Invoke();
+        }
+
+        public event System.Action OnRunCommitted;
 
         private int ComputeMultiplier(int combo)
         {
