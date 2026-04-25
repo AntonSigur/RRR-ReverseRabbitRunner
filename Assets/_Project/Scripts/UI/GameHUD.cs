@@ -117,6 +117,7 @@ namespace ReverseRabbitRunner.UI
         {
             Player.CameraFollow.Instance?.Shake(0.08f, 0.15f);
             nearMissFlashTimer = 0.7f;
+            Core.ScoreManager.Instance?.RegisterNearMiss();
             // Reward the dodge — half a carrot's worth, and it counts as a streak hit
             // so dodging masterfully also builds your combo. Anchored at the obstacle
             // so the score-floater pops where the player actually dodged.
@@ -810,6 +811,22 @@ namespace ReverseRabbitRunner.UI
                 GUI.Label(new Rect(0, row + 172, Screen.width, 24),
                     $"Duration: {durLabel}   |   Tier reached: {maxTier + 1}   |   Best combo: {maxCombo} (x{maxMult})", infoStyle);
 
+                // Pace KPIs — derived live from the run snapshot. Guarded against
+                // very short runs (sub-second) so we never display infinity.
+                float dur = Mathf.Max(0.001f, game.CurrentRunDurationSeconds);
+                int carrots = score?.CarrotsCollected ?? 0;
+                int nearMisses = score?.NearMissCount ?? 0;
+                float avgPace = dur >= 0.5f ? runDist / dur : 0f;
+                float carrotsPerMin = dur >= 0.5f ? carrots * 60f / dur : 0f;
+                infoStyle.fontSize = 16;
+                var prevKpiColor = infoStyle.normal.textColor;
+                infoStyle.normal.textColor = new Color(0.78f, 0.85f, 0.95f);
+                GUI.Label(new Rect(0, row + 196, Screen.width, 22),
+                    $"Pace: {avgPace:0.0} m/s   |   Carrots: {carrots} ({carrotsPerMin:0.0}/min)   |   Near-misses: {nearMisses}",
+                    infoStyle);
+                infoStyle.normal.textColor = prevKpiColor;
+                infoStyle.fontSize = 18;
+
                 // Watch-replay button — only when a replay buffer is available.
                 var rec = Core.DeathReplayRecorder.Instance;
                 if (rec != null && rec.Count >= 4)
@@ -820,7 +837,7 @@ namespace ReverseRabbitRunner.UI
                         buttonStyle.normal.textColor = Color.white;
                     }
                     float btnW = 260f, btnH = 42f;
-                    if (GUI.Button(new Rect((Screen.width - btnW) * 0.5f, row + 208, btnW, btnH),
+                    if (GUI.Button(new Rect((Screen.width - btnW) * 0.5f, row + 236, btnW, btnH),
                                    replayActive ? "■  STOP REPLAY" : "▶  WATCH REPLAY", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
