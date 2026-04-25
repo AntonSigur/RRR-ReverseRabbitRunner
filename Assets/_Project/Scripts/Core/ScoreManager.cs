@@ -107,7 +107,7 @@ namespace ReverseRabbitRunner.Core
             if (comboCount > maxComboReached) maxComboReached = comboCount;
             if (multiplier > maxMultiplierReached) maxMultiplierReached = multiplier;
 
-            int gained = Mathf.Max(1, basePoints) * multiplier;
+            int gained = Mathf.Max(1, Mathf.RoundToInt(Mathf.Max(1, basePoints) * multiplier * EasterEggs.ScoreBonusMultiplier));
             currentScore += gained;
             carrotsCollected++;
             OnScoreChanged?.Invoke(currentScore);
