@@ -79,6 +79,7 @@ It's like having a tireless junior dev who never needs coffee but occasionally p
 - 🧠 Farmer obstacle avoidance AI — scans ahead, switches lanes, stumbles on hits, disappears when far behind, reappears after delay
 - 🥕 Carrot collecting with score tracking and bobbing animation
 - 🔥 **Combo / streak multiplier** — collect carrots in quick succession to build a streak (x2 → x5). Stumble or stop collecting and the streak resets. Pitch-rising audio + on-screen tier-up celebration.
+- 💥 **Screen shake & near-miss bonus** — the camera punches on stumbles and tier-ups, and dodging an obstacle by a hair triggers a "NICE DODGE!" pop with a small score reward (which also feeds your streak).
 - 🛤️ 5-lane switching (A/D or arrow keys)
 - 🦘 Jump mechanic (Space) — clear obstacles and collect mid-air carrots
 - 🌍 Chunk-based infinite world with 3 themed biomes (Concrete, Snow+Mud, Grass)

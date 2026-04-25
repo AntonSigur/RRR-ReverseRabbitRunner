@@ -21,6 +21,7 @@ namespace ReverseRabbitRunner.UI
         private GUIStyle comboStyle;
         private GUIStyle comboBigStyle;
         private float multiplierFlashTimer;  // tier-up celebration flash
+        private float nearMissFlashTimer;    // "NICE!" pop on dodge
 
         private GUIStyle scoreStyle;
         private GUIStyle warningStyle;
@@ -54,18 +55,50 @@ namespace ReverseRabbitRunner.UI
             // (re-Start runs on a fresh instance).
             if (Core.ScoreManager.Instance != null)
                 Core.ScoreManager.Instance.OnComboChanged += OnComboChanged;
+
+            // Wire rabbit feedback events to camera shake + HUD pop
+            if (rabbit != null)
+            {
+                rabbit.OnStumble += OnRabbitStumble;
+                rabbit.OnNearMiss += OnRabbitNearMiss;
+            }
         }
 
         private void OnDestroy()
         {
             if (Core.ScoreManager.Instance != null)
                 Core.ScoreManager.Instance.OnComboChanged -= OnComboChanged;
+            if (rabbit != null)
+            {
+                rabbit.OnStumble -= OnRabbitStumble;
+                rabbit.OnNearMiss -= OnRabbitNearMiss;
+            }
         }
 
         private void OnComboChanged(int comboCount, int multiplier, bool tierIncreased)
         {
             if (tierIncreased)
+            {
                 multiplierFlashTimer = 1.2f;
+                // Subtle "you levelled up" camera punch
+                Player.CameraFollow.Instance?.Shake(0.15f, 0.22f);
+            }
+        }
+
+        private void OnRabbitStumble(float penalty)
+        {
+            // Bigger shake for tall/heavy stumbles
+            float intensity = penalty >= 3f ? 0.45f : 0.25f;
+            Player.CameraFollow.Instance?.Shake(intensity, 0.30f);
+        }
+
+        private void OnRabbitNearMiss(GameObject obstacle)
+        {
+            Player.CameraFollow.Instance?.Shake(0.08f, 0.15f);
+            nearMissFlashTimer = 0.7f;
+            // Reward the dodge — half a carrot's worth, and it counts as a streak hit
+            // so dodging masterfully also builds your combo.
+            Core.ScoreManager.Instance?.AddScore(1);
         }
 
         private Core.DeathSequence GetDeathSeq()
@@ -134,6 +167,22 @@ namespace ReverseRabbitRunner.UI
                 comboBigStyle.fontSize = oldFont;
                 comboBigStyle.normal.textColor = Color.white;
             }
+        }
+
+        private void DrawNearMissPop()
+        {
+            if (nearMissFlashTimer <= 0f) return;
+            float t = Mathf.Clamp01(nearMissFlashTimer / 0.7f);
+            float alpha = t;
+            float yOffset = (1f - t) * -40f;  // floats upward as it fades
+
+            int oldFont = comboBigStyle.fontSize;
+            comboBigStyle.fontSize = 36;
+            comboBigStyle.normal.textColor = new Color(0.6f, 1f, 0.4f, alpha);
+            GUI.Label(new Rect(0, Screen.height * 0.55f + yOffset, Screen.width, 50),
+                "NICE DODGE!  +1", comboBigStyle);
+            comboBigStyle.fontSize = oldFont;
+            comboBigStyle.normal.textColor = Color.white;
         }
 
         private void InitStyles()
@@ -229,6 +278,8 @@ namespace ReverseRabbitRunner.UI
                 stumbleFlashTimer -= Time.unscaledDeltaTime;
             if (multiplierFlashTimer > 0f)
                 multiplierFlashTimer -= Time.unscaledDeltaTime;
+            if (nearMissFlashTimer > 0f)
+                nearMissFlashTimer -= Time.unscaledDeltaTime;
         }
 
         private void OnGUI()
@@ -252,6 +303,7 @@ namespace ReverseRabbitRunner.UI
 
             // Combo / streak indicator (under-score, only when active)
             DrawComboHUD(score, padding);
+            DrawNearMissPop();
             // Speed (below score)
             if (rabbit != null)
             {
