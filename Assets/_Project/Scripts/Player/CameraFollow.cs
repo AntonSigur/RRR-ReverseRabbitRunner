@@ -41,6 +41,10 @@ namespace ReverseRabbitRunner.Player
         /// </summary>
         public void Shake(float intensity, float duration)
         {
+            // Respect player accessibility settings (reduce-motion / scale).
+            intensity *= Core.AccessibilitySettings.ShakeScale;
+            if (intensity <= 0f) return;
+
             // Don't downgrade an in-progress stronger shake
             if (intensity * duration < shakeIntensity * shakeRemaining) return;
             shakeIntensity = intensity;

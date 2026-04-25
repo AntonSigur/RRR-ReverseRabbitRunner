@@ -522,17 +522,18 @@ namespace ReverseRabbitRunner.Core
 
         private void OnApplicationPause(bool pause)
         {
-            if (pause) FlushVolumePrefs();
+            if (pause) { FlushVolumePrefs(); AccessibilitySettings.Flush(); }
         }
 
         private void OnApplicationFocus(bool hasFocus)
         {
-            if (!hasFocus) FlushVolumePrefs();
+            if (!hasFocus) { FlushVolumePrefs(); AccessibilitySettings.Flush(); }
         }
 
         private void OnApplicationQuit()
         {
             FlushVolumePrefs();
+            AccessibilitySettings.Flush();
         }
     }
 }
