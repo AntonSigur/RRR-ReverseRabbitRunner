@@ -618,23 +618,66 @@ namespace ReverseRabbitRunner.UI
                 && (deathSeq == null || !deathSeq.IsPlaying))
             {
                 // Dark overlay
-                GUI.color = new Color(0, 0, 0, 0.6f);
+                GUI.color = new Color(0, 0, 0, 0.72f);
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
                 GUI.color = Color.white;
 
-                GUI.Label(new Rect(0, Screen.height * 0.3f, Screen.width, 60), "GAME OVER", gameOverStyle);
+                GUI.Label(new Rect(0, Screen.height * 0.18f, Screen.width, 60), "GAME OVER", gameOverStyle);
+
+                int finalScore = score?.CurrentScore ?? 0;
+                int best = score?.HighScore ?? 0;
+                float runDist = score?.CurrentRunDistance ?? 0f;
+                float bestDist = score?.BestDistance ?? 0f;
+                int maxCombo = score?.MaxComboReached ?? 0;
+                int maxMult = score?.MaxMultiplierReached ?? 1;
+                int maxTier = score?.MaxTierReached ?? 0;
+                bool newBestScore = score != null && score.LastRunWasNewBestScore;
+                bool newBestDist = score != null && score.LastRunWasNewBestDistance;
 
                 scoreStyle.alignment = TextAnchor.MiddleCenter;
-                GUI.Label(new Rect(0, Screen.height * 0.45f, Screen.width, 50),
-                    $"Carrots: {score?.CurrentScore ?? 0}", scoreStyle);
-                scoreStyle.alignment = TextAnchor.UpperLeft;
 
+                // Run score line
+                int row = (int)(Screen.height * 0.32f);
+                GUI.Label(new Rect(0, row, Screen.width, 50),
+                    $"Score: {finalScore}", scoreStyle);
+                if (newBestScore)
+                {
+                    var prev = scoreStyle.normal.textColor;
+                    scoreStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+                    GUI.Label(new Rect(0, row + 44, Screen.width, 28),
+                        "★ NEW BEST! ★", scoreStyle);
+                    scoreStyle.normal.textColor = prev;
+                }
+
+                // Best score
                 infoStyle.alignment = TextAnchor.MiddleCenter;
+                infoStyle.fontSize = 22;
+                GUI.Label(new Rect(0, row + 78, Screen.width, 28),
+                    $"Best: {best}", infoStyle);
+
+                // Distance
+                GUI.Label(new Rect(0, row + 112, Screen.width, 28),
+                    $"Distance: {runDist:0} m   (best {bestDist:0} m)", infoStyle);
+                if (newBestDist)
+                {
+                    var prev = infoStyle.normal.textColor;
+                    infoStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+                    GUI.Label(new Rect(0, row + 138, Screen.width, 26),
+                        "★ FURTHEST RUN! ★", infoStyle);
+                    infoStyle.normal.textColor = prev;
+                }
+
+                // Run highlights
+                infoStyle.fontSize = 18;
+                GUI.Label(new Rect(0, row + 172, Screen.width, 24),
+                    $"Tier reached: {maxTier + 1}   |   Best combo: {maxCombo} (x{maxMult})", infoStyle);
+
                 infoStyle.fontSize = 24;
-                GUI.Label(new Rect(0, Screen.height * 0.55f, Screen.width, 40),
+                GUI.Label(new Rect(0, Screen.height * 0.78f, Screen.width, 40),
                     "Press R to restart | M for menu", infoStyle);
                 infoStyle.alignment = TextAnchor.UpperLeft;
                 infoStyle.fontSize = 18;
+                scoreStyle.alignment = TextAnchor.UpperLeft;
 
                 if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
                 {
