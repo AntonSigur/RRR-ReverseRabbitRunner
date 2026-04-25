@@ -18,6 +18,30 @@ namespace ReverseRabbitRunner.Core
 
         public GameState CurrentState => currentState;
 
+        // Run-clock: unscaled-time anchor so pause/timescale tricks can't fake it.
+        private float runStartUnscaledTime;
+        private float runPauseStartUnscaledTime;
+        private float runAccumulatedPauseSeconds;
+        private float lastRunDurationSeconds;
+
+        /// <summary>
+        /// Wall-clock seconds the current (or most recent) run has lasted,
+        /// excluding time spent paused. Resets on a new run start.
+        /// </summary>
+        public float CurrentRunDurationSeconds
+        {
+            get
+            {
+                if (currentState == GameState.Menu) return 0f;
+                if (currentState == GameState.GameOver) return lastRunDurationSeconds;
+                if (currentState == GameState.Paused)
+                {
+                    return runPauseStartUnscaledTime - runStartUnscaledTime - runAccumulatedPauseSeconds;
+                }
+                return Time.unscaledTime - runStartUnscaledTime - runAccumulatedPauseSeconds;
+            }
+        }
+
         public event System.Action<GameState> OnGameStateChanged;
 
         private void Awake()
@@ -54,6 +78,8 @@ namespace ReverseRabbitRunner.Core
 
         public void StartGame()
         {
+            runStartUnscaledTime = Time.unscaledTime;
+            runAccumulatedPauseSeconds = 0f;
             SetState(GameState.Playing);
         }
 
@@ -62,6 +88,7 @@ namespace ReverseRabbitRunner.Core
             if (currentState == GameState.Playing)
             {
                 Time.timeScale = 0f;
+                runPauseStartUnscaledTime = Time.unscaledTime;
                 SetState(GameState.Paused);
             }
         }
@@ -71,12 +98,18 @@ namespace ReverseRabbitRunner.Core
             if (currentState == GameState.Paused)
             {
                 Time.timeScale = 1f;
+                runAccumulatedPauseSeconds += Time.unscaledTime - runPauseStartUnscaledTime;
                 SetState(GameState.Playing);
             }
         }
 
         public void GameOver()
         {
+            // Snapshot the duration BEFORE state flip so CurrentRunDurationSeconds
+            // returns the correct value during the GameOver lifecycle.
+            lastRunDurationSeconds = Mathf.Max(0f,
+                Time.unscaledTime - runStartUnscaledTime - runAccumulatedPauseSeconds);
+
             ScoreManager.Instance?.CommitRunResults();
             // Persist a local history entry for the just-finished run.
             if (ScoreManager.Instance != null)
@@ -88,7 +121,8 @@ namespace ReverseRabbitRunner.Core
                     sm.CarrotsCollected,
                     sm.MaxComboReached,
                     sm.MaxMultiplierReached,
-                    DailyRun.IsActive);
+                    DailyRun.IsActive,
+                    lastRunDurationSeconds);
             }
             // Submit to daily-run leaderboard (per-day best) when applicable.
             if (DailyRun.IsActive && ScoreManager.Instance != null)
@@ -101,6 +135,8 @@ namespace ReverseRabbitRunner.Core
         {
             Time.timeScale = 1f;
             ScoreManager.Instance?.ResetScore();
+            runStartUnscaledTime = Time.unscaledTime;
+            runAccumulatedPauseSeconds = 0f;
             SetState(GameState.Playing);
         }
 

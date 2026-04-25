@@ -418,6 +418,21 @@ namespace ReverseRabbitRunner.UI
             string scoreText = $"🥕 {(score != null ? score.CurrentScore : 0)}";
             GUI.Label(new Rect(padding, padding, 300, 50), scoreText, scoreStyle);
 
+            // Live run clock, positioned below Speed/Lane stats so it never
+            // overlaps the score label or the combo ribbon.
+            if (game != null && game.CurrentState == Core.GameManager.GameState.Playing)
+            {
+                string clockText = Core.ScoreHistory.FormatDuration(game.CurrentRunDurationSeconds);
+                var prevAlign = infoStyle.alignment;
+                int prevSize = infoStyle.fontSize;
+                infoStyle.alignment = TextAnchor.UpperLeft;
+                infoStyle.fontSize = 16;
+                GUI.Label(new Rect(padding, padding + 95, 160, 22),
+                    $"⏱ {clockText}", infoStyle);
+                infoStyle.alignment = prevAlign;
+                infoStyle.fontSize = prevSize;
+            }
+
             // Combo / streak indicator (under-score, only when active)
             DrawComboHUD(score, padding);
             DrawNearMissPop();
@@ -787,8 +802,9 @@ namespace ReverseRabbitRunner.UI
 
                 // Run highlights
                 infoStyle.fontSize = 18;
+                string durLabel = Core.ScoreHistory.FormatDuration(game.CurrentRunDurationSeconds);
                 GUI.Label(new Rect(0, row + 172, Screen.width, 24),
-                    $"Tier reached: {maxTier + 1}   |   Best combo: {maxCombo} (x{maxMult})", infoStyle);
+                    $"Duration: {durLabel}   |   Tier reached: {maxTier + 1}   |   Best combo: {maxCombo} (x{maxMult})", infoStyle);
 
                 // Watch-replay button — only when a replay buffer is available.
                 var rec = Core.DeathReplayRecorder.Instance;
@@ -1138,7 +1154,7 @@ namespace ReverseRabbitRunner.UI
                     GUI.Label(new Rect(52f, y + 4f, 180f, 26f),
                         $"🥕 {e.score}{(isBest ? "  ★" : string.Empty)}", scoreStyle);
                     GUI.Label(new Rect(52f, y + 28f, content.width - 60f, 22f),
-                        $"{e.distance}m · combo x{e.maxMultiplier} ({e.maxCombo}) · {e.carrots} carrots{(e.daily ? "  ☀ DAILY" : string.Empty)}",
+                        $"{e.distance}m · ⏱ {Core.ScoreHistory.FormatDuration(e.durationSeconds)} · combo x{e.maxMultiplier} ({e.maxCombo}) · {e.carrots} carrots{(e.daily ? "  ☀ DAILY" : string.Empty)}",
                         statStyle);
                     GUI.Label(new Rect(content.width - 180f, y + 4f, 176f, 26f),
                         Core.ScoreHistory.RelativeAge(e.unixSeconds), dateStyle);

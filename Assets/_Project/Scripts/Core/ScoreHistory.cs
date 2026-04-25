@@ -24,6 +24,7 @@ namespace ReverseRabbitRunner.Core
             public int maxCombo;
             public int maxMultiplier;
             public bool daily;
+            public float durationSeconds;
         }
 
         [Serializable]
@@ -70,7 +71,7 @@ namespace ReverseRabbitRunner.Core
         /// Append a run. Newest first. Trims to <see cref="Capacity"/>.
         /// </summary>
         public static void Submit(int score, float distance, int carrots,
-            int maxCombo, int maxMultiplier, bool daily)
+            int maxCombo, int maxMultiplier, bool daily, float durationSeconds = 0f)
         {
             if (score <= 0 && distance <= 0f && carrots <= 0) return; // ignore empty runs
             var w = Load();
@@ -82,7 +83,8 @@ namespace ReverseRabbitRunner.Core
                 carrots = carrots,
                 maxCombo = maxCombo,
                 maxMultiplier = maxMultiplier,
-                daily = daily
+                daily = daily,
+                durationSeconds = Mathf.Max(0f, durationSeconds),
             };
             w.entries.Insert(0, e);
             if (w.entries.Count > Capacity)
@@ -113,6 +115,16 @@ namespace ReverseRabbitRunner.Core
             PlayerPrefs.DeleteKey(PrefsKey);
             PlayerPrefs.Save();
             OnHistoryChanged?.Invoke();
+        }
+
+        /// <summary>"1:23" / "0:07" mm:ss format (falls back to "—" when unknown).</summary>
+        public static string FormatDuration(float seconds)
+        {
+            if (seconds <= 0f) return "—";
+            int total = Mathf.FloorToInt(seconds);
+            int m = total / 60;
+            int s = total % 60;
+            return $"{m}:{s:00}";
         }
 
         /// <summary>"3m ago", "2h ago", "Yesterday", "12 Apr" — short relative label.</summary>
