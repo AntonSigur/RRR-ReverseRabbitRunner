@@ -177,20 +177,18 @@ namespace ReverseRabbitRunner.PowerUps
 
             float s = 0.7f; // 2x the old 0.35 scale
 
-            // Random rainbow color per baby
+            // Random rainbow color per baby (only the body Material varies).
             Color bodyColor = Color.HSVToRGB(
                 Random.value, Random.Range(0.5f, 0.85f), Random.Range(0.8f, 1f));
 
-            System.Func<Color, Material> mat = (c) =>
-            {
-                var m = new Material(urpLit);
-                m.SetColor("_BaseColor", c);
-                return m;
-            };
-            Material bodyMat = mat(bodyColor);
-            Material earMat = mat(new Color(1f, 0.75f, 0.8f));
-            Material noseMat = mat(new Color(1f, 0.4f, 0.5f));
-            Material eyeMat = mat(new Color(0.1f, 0.05f, 0f));
+            Material bodyMat = new Material(urpLit);
+            bodyMat.SetColor("_BaseColor", bodyColor);
+
+            // Ear/nose/eye colors are CONSTANT — share one Material across all babies
+            // instead of allocating 3 fresh ones per baby (~375 leaked Mats per pickup).
+            Material earMat = GetSharedMat(ref sharedEarMat, urpLit, new Color(1f, 0.75f, 0.8f));
+            Material noseMat = GetSharedMat(ref sharedNoseMat, urpLit, new Color(1f, 0.4f, 0.5f));
+            Material eyeMat = GetSharedMat(ref sharedEyeMat, urpLit, new Color(0.1f, 0.05f, 0f));
 
             // Body
             var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -255,8 +253,26 @@ namespace ReverseRabbitRunner.PowerUps
 
             var baby = root.AddComponent<BabyRabbit>();
             baby.Initialize(rabbit, farmer, zOffset, xStart, speedMult);
+            // Free the per-body Material when this baby is destroyed (death / scene unload).
+            root.AddComponent<ReverseRabbitRunner.Core.MaterialDisposer>().target = bodyMat;
 
             return root;
+        }
+
+        // Shared Materials for the constant-color parts of every baby rabbit.
+        // Created lazily on first spawn, kept alive for the rest of the session.
+        private static Material sharedEarMat;
+        private static Material sharedNoseMat;
+        private static Material sharedEyeMat;
+
+        private static Material GetSharedMat(ref Material slot, Shader shader, Color color)
+        {
+            if (slot == null)
+            {
+                slot = new Material(shader);
+                slot.SetColor("_BaseColor", color);
+            }
+            return slot;
         }
     }
 }
