@@ -48,6 +48,7 @@ namespace ReverseRabbitRunner.Core
 
         // Event wiring state
         private Player.RabbitController cachedRabbit;
+        private Transform cachedFarmer;
         private bool wasGrounded = true;
         private bool subscribedToRabbit;
 
@@ -107,6 +108,7 @@ namespace ReverseRabbitRunner.Core
                 cachedRabbit.OnStumble -= OnStumble;
             }
             cachedRabbit = null;
+            cachedFarmer = null;
             subscribedToRabbit = false;
             wasGrounded = true;
 
@@ -344,10 +346,17 @@ namespace ReverseRabbitRunner.Core
                 return;
             }
 
-            var farmerObj = GameObject.FindGameObjectWithTag("Farmer");
-            if (farmerObj == null) return;
+            var farmerObj = cachedFarmer;
+            if (farmerObj == null)
+            {
+                // Re-discover the farmer once after each scene reload
+                var go = GameObject.FindGameObjectWithTag("Farmer");
+                if (go == null) return;
+                cachedFarmer = go.transform;
+                farmerObj = cachedFarmer;
+            }
 
-            float dist = Vector3.Distance(farmerObj.transform.position, cachedRabbit.transform.position);
+            float dist = Vector3.Distance(farmerObj.position, cachedRabbit.transform.position);
 
             // Fade in danger sound: starts at 4 units, full at 2 units
             // (farmer's baseDistance is 5, so no sound during normal play)
