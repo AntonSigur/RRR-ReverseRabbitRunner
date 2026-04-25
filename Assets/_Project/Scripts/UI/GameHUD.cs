@@ -34,6 +34,8 @@ namespace ReverseRabbitRunner.UI
         private bool showSettings = false;
         private bool showAchievements = false;
         private Vector2 achievementsScroll;
+        private bool showHistory = false;
+        private Vector2 historyScroll;
         private bool wasStumbling;
         private float stumbleFlashTimer;
 
@@ -372,6 +374,12 @@ namespace ReverseRabbitRunner.UI
                     return;
                 }
 
+                if (showHistory)
+                {
+                    showHistory = false;
+                    return;
+                }
+
                 isPaused = !isPaused;
                 Time.timeScale = isPaused ? 0f : 1f;
             }
@@ -545,10 +553,10 @@ namespace ReverseRabbitRunner.UI
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
                 GUI.color = Color.white;
 
-                if (!showSettings && !showAchievements)
+                if (!showSettings && !showAchievements && !showHistory)
                 {
                     gameOverStyle.normal.textColor = Color.white;
-                    GUI.Label(new Rect(0, Screen.height * 0.2f, Screen.width, 60), "PAUSED", gameOverStyle);
+                    GUI.Label(new Rect(0, Screen.height * 0.18f, Screen.width, 60), "PAUSED", gameOverStyle);
                     gameOverStyle.normal.textColor = Color.red;
 
                     if (buttonStyle == null)
@@ -565,27 +573,35 @@ namespace ReverseRabbitRunner.UI
                     float btnW = 300, btnH = 50;
                     float btnX = (Screen.width - btnW) / 2f;
 
-                    if (GUI.Button(new Rect(btnX, Screen.height * 0.36f, btnW, btnH), "▶  RESUME", buttonStyle))
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.32f, btnW, btnH), "▶  RESUME", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
                         isPaused = false;
                         Time.timeScale = 1f;
                     }
 
-                    if (GUI.Button(new Rect(btnX, Screen.height * 0.45f, btnW, btnH), "⚙  SETTINGS", buttonStyle))
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.40f, btnW, btnH), "⚙  SETTINGS", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
                         showSettings = true;
                     }
 
                     string achLabel = $"🏆  ACHIEVEMENTS  ({Core.Achievements.UnlockedCount}/{Core.Achievements.Total})";
-                    if (GUI.Button(new Rect(btnX, Screen.height * 0.54f, btnW, btnH), achLabel, buttonStyle))
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.48f, btnW, btnH), achLabel, buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
                         showAchievements = true;
                     }
 
-                    if (GUI.Button(new Rect(btnX, Screen.height * 0.63f, btnW, btnH), "✕  QUIT TO MENU", buttonStyle))
+                    int histCount = Core.ScoreHistory.GetEntries().Count;
+                    string histLabel = histCount > 0 ? $"📜  BEST RUNS  ({histCount})" : "📜  BEST RUNS";
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.56f, btnW, btnH), histLabel, buttonStyle))
+                    {
+                        Core.AudioManager.Instance?.PlayMenuClick();
+                        showHistory = true;
+                    }
+
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.64f, btnW, btnH), "✕  QUIT TO MENU", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
                         isPaused = false;
@@ -680,9 +696,13 @@ namespace ReverseRabbitRunner.UI
                     }
                     infoStyle.alignment = TextAnchor.UpperLeft;
                 }
-                else // showAchievements
+                else if (showAchievements)
                 {
                     DrawAchievementsPanel();
+                }
+                else // showHistory
+                {
+                    DrawHistoryPanel();
                 }
 
                 return; // Don't draw game over or controls hint while paused
@@ -1014,6 +1034,108 @@ namespace ReverseRabbitRunner.UI
             {
                 Core.AudioManager.Instance?.PlayMenuClick();
                 showAchievements = false;
+            }
+        }
+
+        /// <summary>Renders the recent-runs history list inside the pause overlay.</summary>
+        private void DrawHistoryPanel()
+        {
+            var entries = Core.ScoreHistory.GetEntries();
+
+            gameOverStyle.normal.textColor = Color.white;
+            GUI.Label(new Rect(0, Screen.height * 0.10f, Screen.width, 60),
+                entries.Count > 0
+                    ? $"BEST RUNS  ({entries.Count}/{Core.ScoreHistory.Capacity})"
+                    : "BEST RUNS",
+                gameOverStyle);
+            gameOverStyle.normal.textColor = Color.red;
+
+            float listW = Mathf.Min(720f, Screen.width - 80f);
+            float listX = (Screen.width - listW) * 0.5f;
+            float listY = Screen.height * 0.22f;
+            float listH = Screen.height * 0.62f;
+
+            if (entries.Count == 0)
+            {
+                infoStyle.alignment = TextAnchor.MiddleCenter;
+                infoStyle.fontSize = 20;
+                GUI.Label(new Rect(listX, listY + listH * 0.4f, listW, 40),
+                    "No runs yet. Go make some history!", infoStyle);
+                infoStyle.alignment = TextAnchor.UpperLeft;
+            }
+            else
+            {
+                float rowH = 54f;
+                float contentH = entries.Count * (rowH + 4f);
+                var view = new Rect(listX, listY, listW, listH);
+                var content = new Rect(0, 0, listW - 24f, contentH);
+                historyScroll = GUI.BeginScrollView(view, historyScroll, content);
+
+                var rankStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 22, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter,
+                };
+                var scoreStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 20, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft,
+                };
+                var statStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 13, alignment = TextAnchor.MiddleLeft,
+                };
+                var dateStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 13, alignment = TextAnchor.MiddleRight,
+                };
+
+                // Rank by score so the best run is highlighted even if it isn't the newest.
+                int bestScore = Core.ScoreHistory.BestScore();
+
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    var e = entries[i];
+                    float y = i * (rowH + 4f);
+                    bool isBest = e.score == bestScore && bestScore > 0;
+
+                    GUI.color = isBest ? new Color(0.32f, 0.28f, 0.10f, 0.95f)
+                                       : new Color(0.16f, 0.16f, 0.18f, 0.9f);
+                    GUI.DrawTexture(new Rect(0, y, content.width, rowH), Texture2D.whiteTexture);
+
+                    GUI.color = isBest ? new Color(1f, 0.84f, 0.2f, 1f)
+                                       : (e.daily ? new Color(0.35f, 0.75f, 1f, 1f)
+                                                  : new Color(0.35f, 0.35f, 0.4f, 1f));
+                    GUI.DrawTexture(new Rect(0, y, 4f, rowH), Texture2D.whiteTexture);
+                    GUI.color = Color.white;
+
+                    rankStyle.normal.textColor = isBest ? new Color(1f, 0.84f, 0.2f) : Color.white;
+                    scoreStyle.normal.textColor = isBest ? new Color(1f, 0.9f, 0.4f) : Color.white;
+                    statStyle.normal.textColor = new Color(0.75f, 0.75f, 0.8f);
+                    dateStyle.normal.textColor = new Color(0.65f, 0.65f, 0.7f);
+
+                    GUI.Label(new Rect(4f, y, 44f, rowH), (i + 1).ToString(), rankStyle);
+                    GUI.Label(new Rect(52f, y + 4f, 180f, 26f),
+                        $"🥕 {e.score}{(isBest ? "  ★" : string.Empty)}", scoreStyle);
+                    GUI.Label(new Rect(52f, y + 28f, content.width - 60f, 22f),
+                        $"{e.distance}m · combo x{e.maxMultiplier} ({e.maxCombo}) · {e.carrots} carrots{(e.daily ? "  ☀ DAILY" : string.Empty)}",
+                        statStyle);
+                    GUI.Label(new Rect(content.width - 180f, y + 4f, 176f, 26f),
+                        Core.ScoreHistory.RelativeAge(e.unixSeconds), dateStyle);
+                }
+
+                GUI.EndScrollView();
+            }
+
+            if (buttonStyle == null)
+            {
+                buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 24, fontStyle = FontStyle.Bold };
+                buttonStyle.normal.textColor = Color.white;
+            }
+            float bW = 200f, bH = 45f;
+            if (GUI.Button(new Rect((Screen.width - bW) * 0.5f, Screen.height * 0.90f, bW, bH),
+                "← BACK", buttonStyle))
+            {
+                Core.AudioManager.Instance?.PlayMenuClick();
+                showHistory = false;
             }
         }
     }

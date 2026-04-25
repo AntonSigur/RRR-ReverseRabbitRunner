@@ -78,6 +78,18 @@ namespace ReverseRabbitRunner.Core
         public void GameOver()
         {
             ScoreManager.Instance?.CommitRunResults();
+            // Persist a local history entry for the just-finished run.
+            if (ScoreManager.Instance != null)
+            {
+                var sm = ScoreManager.Instance;
+                ScoreHistory.Submit(
+                    sm.CurrentScore,
+                    sm.CurrentRunDistance,
+                    sm.CarrotsCollected,
+                    sm.MaxComboReached,
+                    sm.MaxMultiplierReached,
+                    DailyRun.IsActive);
+            }
             // Submit to daily-run leaderboard (per-day best) when applicable.
             if (DailyRun.IsActive && ScoreManager.Instance != null)
                 DailyRun.SubmitScore(ScoreManager.Instance.CurrentScore);
