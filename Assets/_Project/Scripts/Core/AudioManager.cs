@@ -226,6 +226,7 @@ namespace ReverseRabbitRunner.Core
         /// <summary>
         /// Overlapping collect: duck all currently playing collect sources, then play new one.
         /// This creates a smooth layered sound when picking up many carrots quickly.
+        /// Pitch scales subtly with the current combo multiplier for audio escalation.
         /// </summary>
         private void PlayCollectOverlapping(AudioClip clip)
         {
@@ -242,9 +243,14 @@ namespace ReverseRabbitRunner.Core
             var src = collectSources[nextCollectSource];
             nextCollectSource = (nextCollectSource + 1) % collectSources.Length;
 
+            // Pitch up with combo multiplier (x1=1.0, x2=1.08, x3=1.16, x4=1.24, x5=1.32)
+            int mult = Core.ScoreManager.Instance != null
+                ? Core.ScoreManager.Instance.Multiplier : 1;
+            float comboPitch = 1f + (mult - 1) * 0.08f;
+
             src.clip = clip;
             src.volume = collectVolume * sfxVolume * masterVolume;
-            src.pitch = 1f + Random.Range(-0.08f, 0.08f);
+            src.pitch = comboPitch + Random.Range(-0.04f, 0.04f);
             src.Play();
         }
 

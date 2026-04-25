@@ -17,6 +17,11 @@ namespace ReverseRabbitRunner.UI
         private Core.DeathSequence cachedDeathSeq;
         private World.ChunkManager cachedChunkMgr;
 
+        // Combo display state
+        private GUIStyle comboStyle;
+        private GUIStyle comboBigStyle;
+        private float multiplierFlashTimer;  // tier-up celebration flash
+
         private GUIStyle scoreStyle;
         private GUIStyle warningStyle;
         private GUIStyle infoStyle;
@@ -43,6 +48,24 @@ namespace ReverseRabbitRunner.UI
 
             cachedDeathSeq = FindAnyObjectByType<Core.DeathSequence>();
             cachedChunkMgr = FindAnyObjectByType<World.ChunkManager>();
+
+            // Subscribe to combo events for the tier-up celebration animation.
+            // Subscription survives across sceneLoad because GameHUD itself is per-scene
+            // (re-Start runs on a fresh instance).
+            if (Core.ScoreManager.Instance != null)
+                Core.ScoreManager.Instance.OnComboChanged += OnComboChanged;
+        }
+
+        private void OnDestroy()
+        {
+            if (Core.ScoreManager.Instance != null)
+                Core.ScoreManager.Instance.OnComboChanged -= OnComboChanged;
+        }
+
+        private void OnComboChanged(int comboCount, int multiplier, bool tierIncreased)
+        {
+            if (tierIncreased)
+                multiplierFlashTimer = 1.2f;
         }
 
         private Core.DeathSequence GetDeathSeq()
@@ -56,6 +79,61 @@ namespace ReverseRabbitRunner.UI
         {
             if (cachedChunkMgr == null) cachedChunkMgr = FindAnyObjectByType<World.ChunkManager>();
             return cachedChunkMgr;
+        }
+
+        private static readonly Color[] ComboTierColors = new[]
+        {
+            new Color(1f, 1f, 1f),         // x1 (never shown — combo HUD hidden)
+            new Color(1f, 0.95f, 0.4f),    // x2 yellow
+            new Color(1f, 0.65f, 0.15f),   // x3 orange
+            new Color(1f, 0.3f, 0.2f),     // x4 red
+            new Color(1f, 0.3f, 0.95f),    // x5 magenta
+        };
+
+        private void DrawComboHUD(Core.ScoreManager score, float padding)
+        {
+            if (score == null || score.ComboCount <= 0) return;
+
+            // Small streak label below score
+            int multIdx = Mathf.Clamp(score.Multiplier - 1, 0, ComboTierColors.Length - 1);
+            Color tierColor = ComboTierColors[multIdx];
+            comboStyle.normal.textColor = tierColor;
+            string streakText = score.Multiplier > 1
+                ? $"🔥 x{score.Multiplier}  ({score.ComboCount} streak)"
+                : $"🔥 {score.ComboCount} streak";
+            // Below the existing Speed/Lane info lines
+            GUI.Label(new Rect(padding, padding + 100, 320, 30), streakText, comboStyle);
+
+            // Combo timer pill (thin bar showing how long until streak expires)
+            float remaining = score.ComboTimeRemaining;
+            float window = Mathf.Max(0.01f, score.ComboTimeWindow);
+            float fill = Mathf.Clamp01(remaining / window);
+            float barW = 220f;
+            float barH = 4f;
+            float barY = padding + 132f;
+            GUI.color = new Color(0f, 0f, 0f, 0.35f);
+            GUI.DrawTexture(new Rect(padding, barY, barW, barH), Texture2D.whiteTexture);
+            GUI.color = tierColor;
+            GUI.DrawTexture(new Rect(padding, barY, barW * fill, barH), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+
+            // Tier-up celebration overlay
+            if (multiplierFlashTimer > 0f && score.Multiplier > 1)
+            {
+                float t = Mathf.Clamp01(multiplierFlashTimer / 1.2f);
+                // Fade out over the lifetime, big at start then settle
+                float alpha = t;
+                float scaleBoost = 0.5f + (1f - t) * 0.6f;     // 1.1 → 0.5
+                float fontScale = 1f + scaleBoost;
+
+                int oldFont = comboBigStyle.fontSize;
+                comboBigStyle.fontSize = Mathf.RoundToInt(64 * fontScale);
+                comboBigStyle.normal.textColor = new Color(tierColor.r, tierColor.g, tierColor.b, alpha);
+                string bigText = $"x{score.Multiplier}  COMBO!";
+                GUI.Label(new Rect(0, Screen.height * 0.18f, Screen.width, 120), bigText, comboBigStyle);
+                comboBigStyle.fontSize = oldFont;
+                comboBigStyle.normal.textColor = Color.white;
+            }
         }
 
         private void InitStyles()
@@ -90,6 +168,22 @@ namespace ReverseRabbitRunner.UI
                 alignment = TextAnchor.MiddleCenter
             };
             gameOverStyle.normal.textColor = Color.red;
+
+            comboStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperLeft
+            };
+            comboStyle.normal.textColor = new Color(1f, 0.85f, 0.2f);
+
+            comboBigStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 64,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+            comboBigStyle.normal.textColor = Color.white;
 
             stylesInitialized = true;
         }
@@ -133,6 +227,8 @@ namespace ReverseRabbitRunner.UI
             wasStumbling = currentlyStumbling;
             if (stumbleFlashTimer > 0f)
                 stumbleFlashTimer -= Time.unscaledDeltaTime;
+            if (multiplierFlashTimer > 0f)
+                multiplierFlashTimer -= Time.unscaledDeltaTime;
         }
 
         private void OnGUI()
@@ -154,6 +250,8 @@ namespace ReverseRabbitRunner.UI
             string scoreText = $"🥕 {(score != null ? score.CurrentScore : 0)}";
             GUI.Label(new Rect(padding, padding, 300, 50), scoreText, scoreStyle);
 
+            // Combo / streak indicator (under-score, only when active)
+            DrawComboHUD(score, padding);
             // Speed (below score)
             if (rabbit != null)
             {
