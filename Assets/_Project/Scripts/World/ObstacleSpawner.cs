@@ -46,12 +46,12 @@ namespace ReverseRabbitRunner.World
         {
             if (obstaclePrefabs == null || obstaclePrefabs.Length == 0) return;
 
-            int lane = Random.Range(0, laneCount);
+            int lane = WorldRng.Range(0, laneCount);
             int centerLane = laneCount / 2;
             float xPos = (lane - centerLane) * laneWidth;
             float zPos = playerTransform.position.z - spawnDistance;
 
-            GameObject prefab = obstaclePrefabs[Random.Range(0, obstaclePrefabs.Length)];
+            GameObject prefab = obstaclePrefabs[WorldRng.Range(0, obstaclePrefabs.Length)];
             Instantiate(prefab, new Vector3(xPos, 0, zPos), Quaternion.identity, transform);
         }
     }

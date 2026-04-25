@@ -92,6 +92,14 @@ namespace ReverseRabbitRunner.World
         {
             urpLit = Shader.Find("Universal Render Pipeline/Lit");
 
+            // Seed the world generator before any spawn call below. Daily mode
+            // gets the deterministic seed-of-the-day; otherwise we seed from
+            // wall-clock time so each new run still feels fresh.
+            if (Core.DailyRun.IsActive)
+                WorldRng.InitState(Core.DailyRun.TodaySeed);
+            else
+                WorldRng.InitFromTime();
+
             // Destroy editor preview ground (chunks replace it)
             var previewGround = GameObject.Find("[Ground]");
             if (previewGround != null) Destroy(previewGround);
@@ -232,9 +240,9 @@ namespace ReverseRabbitRunner.World
 
             for (int i = 0; i < carrotsPerChunk; i++)
             {
-                int lane = Random.Range(0, maxLanes);
+                int lane = WorldRng.Range(0, maxLanes);
                 float xPos = (lane - maxLanes / 2) * laneWidth;
-                float zPos = chunkStartZ - Random.Range(2f, chunkLength - 2f);
+                float zPos = chunkStartZ - WorldRng.Range(2f, chunkLength - 2f);
 
                 GameObject carrot = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 carrot.name = $"Carrot";
@@ -298,8 +306,8 @@ namespace ReverseRabbitRunner.World
             {
                 for (int attempt = 0; attempt < 20; attempt++)
                 {
-                    int lane = Random.Range(0, maxLanes);
-                    float z = chunkStartZ - Random.Range(3f, chunkLength - 3f);
+                    int lane = WorldRng.Range(0, maxLanes);
+                    float z = chunkStartZ - WorldRng.Range(3f, chunkLength - 3f);
 
                     // Avoid overlapping carrots
                     bool carrotConflict = false;
@@ -337,20 +345,20 @@ namespace ReverseRabbitRunner.World
 
                     placed.Add((lane, z));
 
-                    bool isTall = Random.value < tallRatio;
+                    bool isTall = WorldRng.Value < tallRatio;
                     float xPos = (lane - maxLanes / 2) * laneWidth;
                     Vector3 pos = new Vector3(xPos, 0f, z);
 
                     if (isTall)
                     {
-                        if (Random.value < 0.5f)
+                        if (WorldRng.Value < 0.5f)
                             CreateFencePost(parent, pos);
                         else
                             CreateScarecrow(parent, pos);
                     }
                     else
                     {
-                        if (Random.value < 0.5f)
+                        if (WorldRng.Value < 0.5f)
                             CreateFarmCrate(parent, pos);
                         else
                             CreateHayBale(parent, pos);
@@ -451,7 +459,7 @@ namespace ReverseRabbitRunner.World
         private void SpawnPlatformInChunk(Transform parent, float chunkStartZ, int chunkIndex)
         {
             if (chunkIndex < platformStartChunk) return;
-            if (Random.value > platformChance) return;
+            if (WorldRng.Value > platformChance) return;
 
             if (platformBedMat == null)
             {
@@ -461,9 +469,9 @@ namespace ReverseRabbitRunner.World
                 platformCabMat = MakeMat(new Color(0.2f, 0.45f, 0.15f));
             }
 
-            int lane = Random.Range(0, maxLanes);
+            int lane = WorldRng.Range(0, maxLanes);
             float xPos = (lane - maxLanes / 2) * laneWidth;
-            int length = Random.Range(platformMinLength, platformMaxLength + 1);
+            int length = WorldRng.Range(platformMinLength, platformMaxLength + 1);
 
             float zStart = chunkStartZ - chunkLength * 0.3f;
             Vector3 pos = new Vector3(xPos, 0f, zStart);
@@ -644,7 +652,7 @@ namespace ReverseRabbitRunner.World
             bool magnetActive = PowerUps.MagnetEffect.Active != null;
 
             // Roll for which power-up to spawn (mutually exclusive per chunk)
-            float roll = Random.value;
+            float roll = WorldRng.Value;
             float birthCutoff = babiesActive ? 0f : birthCarrotChance;
             float wingCutoff = birthCutoff + (isFlying ? 0f : wingCarrotChance);
             float magnetCutoff = wingCutoff + (magnetActive ? 0f : magnetCarrotChance);
@@ -655,9 +663,9 @@ namespace ReverseRabbitRunner.World
 
             if (!spawnBirth && !spawnWing && !spawnMagnet) return;
 
-            int lane = Random.Range(0, maxLanes);
+            int lane = WorldRng.Range(0, maxLanes);
             float xPos = (lane - maxLanes / 2) * laneWidth;
-            float zPos = chunkStartZ - Random.Range(10f, chunkLength - 10f);
+            float zPos = chunkStartZ - WorldRng.Range(10f, chunkLength - 10f);
 
             if (spawnBirth)
             {

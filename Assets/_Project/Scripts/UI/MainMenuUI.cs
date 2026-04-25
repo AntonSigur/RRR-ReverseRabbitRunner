@@ -79,13 +79,24 @@ namespace ReverseRabbitRunner.UI
             goldenIndicator.gameObject.SetActive(Core.EasterEggs.GoldenRabbitUnlocked);
 
             // Buttons
-            CreateButton(canvasObj.transform, "PlayButton", "▶  PLAY", new Vector2(0, 0), OnPlay,
+            CreateButton(canvasObj.transform, "PlayButton", "▶  PLAY", new Vector2(0, 25), OnPlay,
                 new Color(0.2f, 0.7f, 0.2f), Color.white, 36);
 
-            CreateButton(canvasObj.transform, "SettingsButton", "⚙  SETTINGS", new Vector2(0, -80), OnSettings,
+            string dailyLabel = $"📅  DAILY RUN  ({Core.DailyRun.TodayLabel})";
+            CreateButton(canvasObj.transform, "DailyButton", dailyLabel, new Vector2(0, -55), OnDailyRun,
+                new Color(0.55f, 0.45f, 0.18f), Color.white, 24);
+
+            int dailyBest = Core.DailyRun.TodayBestScore;
+            string bestLabel = dailyBest > 0
+                ? $"Today's seed #{Core.DailyRun.TodaySeed:X8} — best {dailyBest}"
+                : $"Today's seed #{Core.DailyRun.TodaySeed:X8} — beat it!";
+            CreateText(canvasObj.transform, "DailyBest", bestLabel,
+                new Vector2(0, -100), 14, new Color(0.85f, 0.78f, 0.5f));
+
+            CreateButton(canvasObj.transform, "SettingsButton", "⚙  SETTINGS", new Vector2(0, -150), OnSettings,
                 new Color(0.3f, 0.3f, 0.4f), Color.white, 28);
 
-            CreateButton(canvasObj.transform, "QuitButton", "✕  QUIT", new Vector2(0, -155), OnQuit,
+            CreateButton(canvasObj.transform, "QuitButton", "✕  QUIT", new Vector2(0, -225), OnQuit,
                 new Color(0.5f, 0.15f, 0.15f), Color.white, 28);
 
             // Version text
@@ -225,7 +236,16 @@ namespace ReverseRabbitRunner.UI
 
         private void OnPlay()
         {
-            // Persist any uncommitted slider changes before scene swap.
+            // Standard infinite run — make sure daily mode isn't lingering on
+            // from a previous press of the Daily Run button.
+            Core.DailyRun.SetActive(false);
+            PlayerPrefs.Save();
+            SceneManager.LoadScene("SampleScene");
+        }
+
+        private void OnDailyRun()
+        {
+            Core.DailyRun.SetActive(true);
             PlayerPrefs.Save();
             SceneManager.LoadScene("SampleScene");
         }

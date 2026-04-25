@@ -478,6 +478,22 @@ namespace ReverseRabbitRunner.UI
                 GUI.Label(new Rect(padding, padding + 95, 300, 30), highText, infoStyle);
             }
 
+            // Daily Run ribbon — top centre, visible the whole run.
+            if (Core.DailyRun.IsActive)
+            {
+                int dailyBest = Core.DailyRun.TodayBestScore;
+                string ribbon = dailyBest > 0
+                    ? $"📅 DAILY  {Core.DailyRun.TodayLabel}  •  seed #{Core.DailyRun.TodaySeed:X8}  •  today's best: {dailyBest}"
+                    : $"📅 DAILY  {Core.DailyRun.TodayLabel}  •  seed #{Core.DailyRun.TodaySeed:X8}  •  set the bar!";
+                var prevAlign = infoStyle.alignment;
+                var prevColor = infoStyle.normal.textColor;
+                infoStyle.alignment = TextAnchor.UpperCenter;
+                infoStyle.normal.textColor = new Color(1f, 0.86f, 0.35f);
+                GUI.Label(new Rect(0, 6f, Screen.width, 22f), ribbon, infoStyle);
+                infoStyle.alignment = prevAlign;
+                infoStyle.normal.textColor = prevColor;
+            }
+
             // Chunk/Distance debug stats (bottom-left)
             var chunkMgr = GetChunkMgr();
             if (chunkMgr != null)
