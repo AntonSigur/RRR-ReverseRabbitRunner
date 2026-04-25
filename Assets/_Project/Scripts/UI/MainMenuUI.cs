@@ -103,8 +103,52 @@ namespace ReverseRabbitRunner.UI
             CreateText(canvasObj.transform, "Version", "v0.1 — Prototype",
                 new Vector2(0, -280), 16, new Color(0.4f, 0.4f, 0.4f));
 
+            // Top-3 best runs board (right-anchored column, only when data
+            // exists; silent on fresh installs so the menu stays uncluttered).
+            BuildTopRunsBoard(canvasObj.transform);
+
             // Settings panel (hidden by default)
             BuildSettingsPanel(canvasObj.transform);
+        }
+
+        private void BuildTopRunsBoard(Transform parent)
+        {
+            var entries = Core.ScoreHistory.GetEntries();
+            if (entries.Count == 0) return;
+
+            // Shallow top-3 by score (entries are newest-first; we need score-sorted).
+            var ranked = new System.Collections.Generic.List<Core.ScoreHistory.Entry>(entries);
+            ranked.Sort((a, b) => b.score.CompareTo(a.score));
+            int shown = Mathf.Min(3, ranked.Count);
+
+            // Container anchored to the right edge so it never collides with
+            // the centred button column.
+            GameObject panel = new GameObject("TopRunsPanel");
+            panel.transform.SetParent(parent, false);
+            var rect = panel.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(1f, 0.5f);
+            rect.anchorMax = new Vector2(1f, 0.5f);
+            rect.sizeDelta = new Vector2(360f, 220f);
+            rect.anchoredPosition = new Vector2(-200f, 30f);
+
+            var bg = panel.AddComponent<Image>();
+            bg.color = new Color(0.06f, 0.05f, 0.10f, 0.72f);
+
+            CreateText(panel.transform, "TopRunsTitle", "🏆  TOP RUNS",
+                new Vector2(0, 85f), 22, new Color(1f, 0.82f, 0.22f), FontStyle.Bold);
+
+            for (int i = 0; i < shown; i++)
+            {
+                var e = ranked[i];
+                float y = 40f - i * 38f;
+                string line = $"#{i + 1}   🥕 {e.score}   ·   {e.distance}m";
+                string sub = $"⏱ {Core.ScoreHistory.FormatDuration(e.durationSeconds)}   ·   x{e.maxMultiplier}   ·   {Core.ScoreHistory.RelativeAge(e.unixSeconds)}";
+                CreateText(panel.transform, $"TopRow{i}A", line,
+                    new Vector2(0, y), 18,
+                    i == 0 ? new Color(1f, 0.9f, 0.4f) : Color.white, FontStyle.Bold);
+                CreateText(panel.transform, $"TopRow{i}B", sub,
+                    new Vector2(0, y - 16f), 13, new Color(0.72f, 0.72f, 0.78f));
+            }
         }
 
         private void BuildSettingsPanel(Transform parent)
