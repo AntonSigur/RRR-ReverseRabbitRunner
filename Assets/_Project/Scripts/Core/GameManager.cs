@@ -78,6 +78,9 @@ namespace ReverseRabbitRunner.Core
         public void GameOver()
         {
             ScoreManager.Instance?.CommitRunResults();
+            // Submit to daily-run leaderboard (per-day best) when applicable.
+            if (DailyRun.IsActive && ScoreManager.Instance != null)
+                DailyRun.SubmitScore(ScoreManager.Instance.CurrentScore);
             Time.timeScale = 0f;
             SetState(GameState.GameOver);
         }
