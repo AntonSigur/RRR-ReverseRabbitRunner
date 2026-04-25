@@ -32,6 +32,8 @@ namespace ReverseRabbitRunner.UI
         private bool stylesInitialized = false;
         private bool isPaused = false;
         private bool showSettings = false;
+        private bool showAchievements = false;
+        private Vector2 achievementsScroll;
         private bool wasStumbling;
         private float stumbleFlashTimer;
 
@@ -359,6 +361,12 @@ namespace ReverseRabbitRunner.UI
                     return;
                 }
 
+                if (showAchievements)
+                {
+                    showAchievements = false;
+                    return;
+                }
+
                 isPaused = !isPaused;
                 Time.timeScale = isPaused ? 0f : 1f;
             }
@@ -490,7 +498,7 @@ namespace ReverseRabbitRunner.UI
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
                 GUI.color = Color.white;
 
-                if (!showSettings)
+                if (!showSettings && !showAchievements)
                 {
                     gameOverStyle.normal.textColor = Color.white;
                     GUI.Label(new Rect(0, Screen.height * 0.2f, Screen.width, 60), "PAUSED", gameOverStyle);
@@ -510,20 +518,27 @@ namespace ReverseRabbitRunner.UI
                     float btnW = 300, btnH = 50;
                     float btnX = (Screen.width - btnW) / 2f;
 
-                    if (GUI.Button(new Rect(btnX, Screen.height * 0.38f, btnW, btnH), "▶  RESUME", buttonStyle))
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.36f, btnW, btnH), "▶  RESUME", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
                         isPaused = false;
                         Time.timeScale = 1f;
                     }
 
-                    if (GUI.Button(new Rect(btnX, Screen.height * 0.48f, btnW, btnH), "⚙  SETTINGS", buttonStyle))
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.45f, btnW, btnH), "⚙  SETTINGS", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
                         showSettings = true;
                     }
 
-                    if (GUI.Button(new Rect(btnX, Screen.height * 0.58f, btnW, btnH), "✕  QUIT TO MENU", buttonStyle))
+                    string achLabel = $"🏆  ACHIEVEMENTS  ({Core.Achievements.UnlockedCount}/{Core.Achievements.Total})";
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.54f, btnW, btnH), achLabel, buttonStyle))
+                    {
+                        Core.AudioManager.Instance?.PlayMenuClick();
+                        showAchievements = true;
+                    }
+
+                    if (GUI.Button(new Rect(btnX, Screen.height * 0.63f, btnW, btnH), "✕  QUIT TO MENU", buttonStyle))
                     {
                         Core.AudioManager.Instance?.PlayMenuClick();
                         isPaused = false;
@@ -531,11 +546,11 @@ namespace ReverseRabbitRunner.UI
                     }
 
                     infoStyle.alignment = TextAnchor.MiddleCenter;
-                    GUI.Label(new Rect(0, Screen.height * 0.72f, Screen.width, 30),
+                    GUI.Label(new Rect(0, Screen.height * 0.74f, Screen.width, 30),
                         "Esc or Q to resume", infoStyle);
                     infoStyle.alignment = TextAnchor.UpperLeft;
                 }
-                else
+                else if (showSettings)
                 {
                     // Settings sub-panel
                     gameOverStyle.normal.textColor = Color.white;
@@ -617,6 +632,10 @@ namespace ReverseRabbitRunner.UI
                         showSettings = false;
                     }
                     infoStyle.alignment = TextAnchor.UpperLeft;
+                }
+                else // showAchievements
+                {
+                    DrawAchievementsPanel();
                 }
 
                 return; // Don't draw game over or controls hint while paused
@@ -708,6 +727,81 @@ namespace ReverseRabbitRunner.UI
             GUI.Label(new Rect(0, Screen.height - 50, Screen.width, 40),
                 "A/D or ←/→ to switch lanes | Space/W/↑ to jump", infoStyle);
             infoStyle.alignment = TextAnchor.UpperLeft;
+        }
+
+        /// <summary>Renders the achievements list inside the pause overlay.</summary>
+        private void DrawAchievementsPanel()
+        {
+            gameOverStyle.normal.textColor = Color.white;
+            GUI.Label(new Rect(0, Screen.height * 0.10f, Screen.width, 60),
+                $"ACHIEVEMENTS  {Core.Achievements.UnlockedCount}/{Core.Achievements.Total}",
+                gameOverStyle);
+            gameOverStyle.normal.textColor = Color.red;
+
+            float listW = Mathf.Min(640f, Screen.width - 80f);
+            float listX = (Screen.width - listW) * 0.5f;
+            float listY = Screen.height * 0.22f;
+            float listH = Screen.height * 0.62f;
+
+            var defs = Core.Achievements.All;
+            float rowH = 70f;
+            float contentH = defs.Count * (rowH + 6f);
+
+            var view = new Rect(listX, listY, listW, listH);
+            var content = new Rect(0, 0, listW - 24f, contentH);
+            achievementsScroll = GUI.BeginScrollView(view, achievementsScroll, content);
+
+            var iconStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 32, alignment = TextAnchor.MiddleCenter,
+            };
+            var titleLabel = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft,
+            };
+            var descLabel = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14, alignment = TextAnchor.MiddleLeft, wordWrap = true,
+            };
+
+            for (int i = 0; i < defs.Count; i++)
+            {
+                var def = defs[i];
+                bool unlocked = Core.Achievements.IsUnlocked(def.Id);
+                float y = i * (rowH + 6f);
+
+                GUI.color = unlocked ? new Color(0.18f, 0.32f, 0.18f, 0.9f)
+                                     : new Color(0.18f, 0.18f, 0.18f, 0.85f);
+                GUI.DrawTexture(new Rect(0, y, content.width, rowH), Texture2D.whiteTexture);
+                GUI.color = unlocked ? new Color(1f, 0.84f, 0.2f, 1f)
+                                     : new Color(0.4f, 0.4f, 0.4f, 1f);
+                GUI.DrawTexture(new Rect(0, y, 4f, rowH), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+
+                titleLabel.normal.textColor = unlocked ? Color.white : new Color(0.65f, 0.65f, 0.65f);
+                descLabel.normal.textColor  = unlocked ? new Color(0.85f, 0.85f, 0.85f)
+                                                       : new Color(0.55f, 0.55f, 0.55f);
+                iconStyle.normal.textColor = unlocked ? Color.white : new Color(0.5f, 0.5f, 0.5f);
+
+                GUI.Label(new Rect(8f, y, 60f, rowH), unlocked ? def.Icon : "🔒", iconStyle);
+                GUI.Label(new Rect(76f, y + 8f, content.width - 80f, 24f), def.Title, titleLabel);
+                GUI.Label(new Rect(76f, y + 32f, content.width - 80f, 32f), def.Description, descLabel);
+            }
+
+            GUI.EndScrollView();
+
+            if (buttonStyle == null)
+            {
+                buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 24, fontStyle = FontStyle.Bold };
+                buttonStyle.normal.textColor = Color.white;
+            }
+            float backW = 200f, backH = 45f;
+            if (GUI.Button(new Rect((Screen.width - backW) * 0.5f, Screen.height * 0.90f, backW, backH),
+                "← BACK", buttonStyle))
+            {
+                Core.AudioManager.Instance?.PlayMenuClick();
+                showAchievements = false;
+            }
         }
     }
 }
