@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ReverseRabbitRunner.Core
 {
@@ -92,6 +93,29 @@ namespace ReverseRabbitRunner.Core
             dangerSource.clip = dangerWarning;
 
             LoadVolumePrefs();
+
+            // Re-subscribe to fresh objects on every scene reload
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // Stale references may still pass C# null check; force re-discovery.
+            if (cachedRabbit != null)
+            {
+                cachedRabbit.OnCollectCarrot -= OnCollectCarrot;
+                cachedRabbit.OnStumble -= OnStumble;
+            }
+            cachedRabbit = null;
+            subscribedToRabbit = false;
+            wasGrounded = true;
+
+            // Stop any lingering danger loop carried over from a previous scene
+            if (dangerSource != null)
+            {
+                dangerSource.Stop();
+                dangerSource.volume = 0f;
+            }
         }
 
         private void LoadClipsFromResources()
@@ -119,8 +143,13 @@ namespace ReverseRabbitRunner.Core
 
         private void Update()
         {
-            if (!subscribedToRabbit)
+            // Unity-aware null check catches destroyed-but-non-null references
+            // (e.g. when a scene reload destroys the rabbit but we kept the ref).
+            if (!subscribedToRabbit || cachedRabbit == null)
+            {
+                if (cachedRabbit == null) subscribedToRabbit = false;
                 TrySubscribeToRabbit();
+            }
 
             // Detect landing (was airborne, now grounded)
             if (cachedRabbit != null && cachedRabbit.IsAlive)
@@ -152,6 +181,8 @@ namespace ReverseRabbitRunner.Core
 
         private void OnDestroy()
         {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
             if (cachedRabbit != null)
             {
                 cachedRabbit.OnCollectCarrot -= OnCollectCarrot;
