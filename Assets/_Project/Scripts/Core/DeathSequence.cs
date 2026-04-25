@@ -369,6 +369,7 @@ namespace ReverseRabbitRunner.Core
                     if (mat.HasProperty("_Smoothness"))
                         mat.SetFloat("_Smoothness", 0.9f);
                     p.GetComponent<Renderer>().material = mat;
+                    p.AddComponent<MaterialDisposer>().target = mat;
                 }
                 else
                 {
@@ -382,6 +383,7 @@ namespace ReverseRabbitRunner.Core
                         ? new Color(0.2f, Random.Range(0.5f, 0.8f), 0.1f)
                         : new Color(Random.Range(0.85f, 1f), Random.Range(0.3f, 0.55f), Random.Range(0.0f, 0.1f));
                     p.GetComponent<Renderer>().material = mat;
+                    p.AddComponent<MaterialDisposer>().target = mat;
                 }
 
                 Object.DestroyImmediate(p.GetComponent<Collider>());
@@ -404,6 +406,9 @@ namespace ReverseRabbitRunner.Core
                 Destroy(p, particleLifetime);
             }
             Debug.Log($"[DeathSequence] Spawned {particleBurstCount} particles. First at {particles[0]?.transform.position}");
+            // baseMaterial was only needed as a shader source for the loop above —
+            // each particle has its own cloned Material now, so release this one.
+            if (baseMaterial != null) Destroy(baseMaterial);
         }
 
         /// <summary>
@@ -459,6 +464,19 @@ namespace ReverseRabbitRunner.Core
                 if (found != null) return found;
             }
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Helper attached to disposable particles — destroys an associated Material when
+    /// the host GameObject is destroyed, preventing per-particle Material leaks.
+    /// </summary>
+    internal class MaterialDisposer : MonoBehaviour
+    {
+        public Material target;
+        private void OnDestroy()
+        {
+            if (target != null) Destroy(target);
         }
     }
 }
